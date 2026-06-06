@@ -1,0 +1,18 @@
+# Local environment
+.env
+.env.local
+.env.*.local
+# Dependencies / builds
+node_modules
+.next
+.turbo
+dist
+# System files
+.DS_Store
+
+# Local audit / backup artifacts
+*.zip
+backup-originals-*
+codex-audit-*
+codex-files-list.txt
+codex-package-json.txt

@@ -1,0 +1,33 @@
+{
+  "source": "IGN Géoplateforme WMTS",
+  "layer": "ELEVATION.ELEVATIONGRIDCOVERAGE.SHADOW",
+  "service": "https://data.geopf.fr/tms/1.0.0/",
+  "zoom": 6,
+  "tiles": [
+    "6-31-21.png",
+    "6-32-21.png",
+    "6-33-21.png",
+    "6-31-22.png",
+    "6-32-22.png",
+    "6-33-22.png",
+    "6-31-23.png",
+    "6-32-23.png",
+    "6-33-23.png"
+  ],
+  "bbox": {
+    "west": -5.65,
+    "south": 41.15,
+    "east": 9.85,
+    "north": 51.25
+  },
+  "generatedAt": "2026-06-02T13:39:35.330Z",
+  "output": "/assets/map/france-ign-hillshade.png",
+  "outputs": [
+    "/assets/map/france-ign-hillshade.png",
+    "/assets/map/france-ign-hillshade-visible.png"
+  ],
+  "visibleLayer": {
+    "output": "/assets/map/france-ign-hillshade-visible.png",
+    "note": "Version contrastée et alpha renforcé pour intégration SVG au-dessus des aplats de région."
+  }
+}
