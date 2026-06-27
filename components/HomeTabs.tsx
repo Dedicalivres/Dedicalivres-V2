@@ -9,16 +9,11 @@ import { LivingBook } from "@/components/LivingBook";
 import { supabase } from "@/lib/supabaseClient";
 import { FRANCOPHONE_COUNTRIES } from "@/lib/francophone";
 
+// ImmersiveMap chargé à la demande uniquement quand l'onglet Carte est ouvert.
+// Évite de charger 370 Ko de données SVG sur toutes les autres pages.
 const ImmersiveMap = dynamic(
   () => import("@/components/ImmersiveMap").then((mod) => ({ default: mod.ImmersiveMap })),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="immersive-map-loading">
-        <span>Chargement de la carte…</span>
-      </div>
-    ),
-  }
+  { ssr: false }
 );
 
 const tabIds = ["accueil", "recherche", "agenda", "auteurs", "carte", "contact"] as const;
