@@ -2,9 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { ArrowRight, AtSign, CalendarDays, Filter, Globe2, Mail, MapPin, MessageSquare, Search, Send } from "lucide-react";
+import dynamic from "next/dynamic";
 import { AgendaCalendar } from "@/components/AgendaCalendar";
 import { AuthorsFloatingGallery } from "@/components/AuthorsFloatingGallery";
-import dynamic from "next/dynamic";
+import { LivingBook } from "@/components/LivingBook";
+import { supabase } from "@/lib/supabaseClient";
+import { FRANCOPHONE_COUNTRIES } from "@/lib/francophone";
 
 const ImmersiveMap = dynamic(
   () => import("@/components/ImmersiveMap").then((mod) => ({ default: mod.ImmersiveMap })),
@@ -17,9 +20,6 @@ const ImmersiveMap = dynamic(
     ),
   }
 );
-import { LivingBook } from "@/components/LivingBook";
-import { supabase } from "@/lib/supabaseClient";
-import { FRANCOPHONE_COUNTRIES } from "@/lib/francophone";
 
 const tabIds = ["accueil", "recherche", "agenda", "auteurs", "carte", "contact"] as const;
 type TabId = typeof tabIds[number];
@@ -94,7 +94,7 @@ function SearchTab() {
       <div className="tab-heading">
         <p className="eyebrow">Recherche</p>
         <h2 id="tab-recherche-title">Trouver une rencontre littéraire.</h2>
-        <p>Recherchez par mot-clé, type, pays, territoire ou ville dans l’agenda francophone partagé.</p>
+        <p>Recherchez par mot-clé, type, pays, territoire ou ville dans l'agenda francophone partagé.</p>
       </div>
 
       <form className="tab-search-form" action="/evenements" method="get">
@@ -176,9 +176,9 @@ function ContactTab() {
   return (
     <section className="app-tab-panel contact-tab" id="contact" aria-labelledby="tab-contact-title">
       <div className="tab-heading">
-        <p className="eyebrow">Contact & livre d’or</p>
+        <p className="eyebrow">Contact & livre d'or</p>
         <h2 id="tab-contact-title">Restons en lien avec les lecteurs.</h2>
-        <p>Les coordonnées passent avant la prise de parole : contact direct, Instagram, puis retour d’expérience.</p>
+        <p>Les coordonnées passent avant la prise de parole : contact direct, Instagram, puis retour d'expérience.</p>
       </div>
 
       <div className="contact-tab-grid">
@@ -211,12 +211,12 @@ function ContactTab() {
           </label>
           <button type="button">
             <Send size={16} />
-            Prévisualiser l’envoi
+            Prévisualiser l'envoi
           </button>
         </form>
 
         <form className="contact-card guestbook-card">
-          <h3>Livre d’or</h3>
+          <h3>Livre d'or</h3>
           <label>
             <span>Votre message</span>
             <textarea rows={5} placeholder="Une suggestion, une ville à ajouter, un retour..." />
@@ -262,13 +262,13 @@ export function HomeTabs() {
               <br />
               aux livres.
             </h1>
-            <p className="lead">Salons, dédicaces, auteurs et festivals dans l’espace francophone.</p>
+            <p className="lead">Salons, dédicaces, auteurs et festivals dans l'espace francophone.</p>
             <div className="cta-row">
               <a className="primary-cta" href="#recherche">
                 Rechercher <Search size={18} />
               </a>
               <a className="secondary-link" href="#agenda">
-                <CalendarDays size={15} />Voir l’agenda
+                <CalendarDays size={15} />Voir l'agenda
               </a>
             </div>
           </div>
