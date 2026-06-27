@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowRight, AtSign, CalendarDays, Filter, Mail, MapPin, MessageSquare, Search, Send } from "lucide-react";
+import { ArrowRight, AtSign, CalendarDays, Filter, Globe2, Mail, MapPin, MessageSquare, Search, Send } from "lucide-react";
 import { AgendaCalendar } from "@/components/AgendaCalendar";
 import { AuthorsFloatingGallery } from "@/components/AuthorsFloatingGallery";
 import { ImmersiveMap } from "@/components/ImmersiveMap";
 import { LivingBook } from "@/components/LivingBook";
 import { supabase } from "@/lib/supabaseClient";
+import { FRANCOPHONE_COUNTRIES } from "@/lib/francophone";
 
 const tabIds = ["accueil", "recherche", "agenda", "auteurs", "carte", "contact"] as const;
 type TabId = typeof tabIds[number];
@@ -34,7 +35,7 @@ function SearchTab() {
 
       const { data, error } = await supabase
         .from("events")
-        .select("title,name,event_title,titre,city,ville,location,lieu,region,region_name")
+        .select("title,name,event_title,titre,city,ville,location,lieu,region,region_name,country_code")
         .eq("validated", true)
         .eq("rejected", false)
         .limit(300);
@@ -81,7 +82,7 @@ function SearchTab() {
       <div className="tab-heading">
         <p className="eyebrow">Recherche</p>
         <h2 id="tab-recherche-title">Trouver une rencontre littéraire.</h2>
-        <p>La recherche reprend l’entrée événement de la V1 : mot-clé, type, région et ville, avec envoi vers la page de résultats existante.</p>
+        <p>Recherchez par mot-clé, type, pays, territoire ou ville dans l’agenda francophone partagé.</p>
       </div>
 
       <form className="tab-search-form" action="/evenements" method="get">
@@ -105,8 +106,17 @@ function SearchTab() {
           </select>
         </label>
         <label>
+          <Globe2 size={17} />
+          <select name="country" defaultValue="">
+            <option value="">Tous les pays</option>
+            {FRANCOPHONE_COUNTRIES.map((country) => (
+              <option key={country.code} value={country.code}>{country.flag} {country.name}</option>
+            ))}
+          </select>
+        </label>
+        <label>
           <MapPin size={17} />
-          <input name="region" list="home-region-suggestions" placeholder="Région" />
+          <input name="region" list="home-region-suggestions" placeholder="Région / canton" />
           <datalist id="home-region-suggestions">
             {suggestions.regions.map((region) => (
               <option key={region} value={region} />
@@ -128,8 +138,14 @@ function SearchTab() {
       </form>
 
       <div className="search-shortcuts" aria-label="Raccourcis de recherche">
-        {["Paris", "Lyon", "Bretagne", "Salon", "Dédicace"].map((shortcut) => (
-          <a href={`/evenements?q=${encodeURIComponent(shortcut)}`} key={shortcut}>{shortcut}</a>
+        {[
+          { label: "🇫🇷 France", href: "/evenements?country=FR" },
+          { label: "🇧🇪 Belgique", href: "/evenements?country=BE" },
+          { label: "🇱🇺 Luxembourg", href: "/evenements?country=LU" },
+          { label: "🇨🇭 Suisse", href: "/evenements?country=CH" },
+          { label: "Dédicaces", href: "/evenements?type=dedicace" },
+        ].map((shortcut) => (
+          <a href={shortcut.href} key={shortcut.href}>{shortcut.label}</a>
         ))}
       </div>
     </section>
@@ -178,8 +194,8 @@ function ContactTab() {
             </select>
           </label>
           <label>
-            <span>Votre région</span>
-            <input placeholder="Ex. Bretagne, Occitanie..." />
+            <span>Votre territoire</span>
+            <input placeholder="Ex. Bretagne, Liège, canton de Vaud..." />
           </label>
           <button type="button">
             <Send size={16} />
@@ -234,7 +250,7 @@ export function HomeTabs() {
               <br />
               aux livres.
             </h1>
-            <p className="lead">Salons, dédicaces, auteurs, festivals... partout en France.</p>
+            <p className="lead">Salons, dédicaces, auteurs et festivals dans l’espace francophone.</p>
             <div className="cta-row">
               <a className="primary-cta" href="#recherche">
                 Rechercher <Search size={18} />

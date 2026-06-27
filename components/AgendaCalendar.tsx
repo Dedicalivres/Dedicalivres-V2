@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, MapPin, Sparkles } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
+import { countryName, eventCountryCode } from "@/lib/francophone";
 
 type AgendaEvent = {
   id?: string;
@@ -10,6 +11,8 @@ type AgendaEvent = {
   title: string;
   city: string;
   region: string;
+  countryCode: string;
+  country: string;
   type: string;
   date: string;
   endDate?: string;
@@ -63,7 +66,9 @@ function normalizeEvent(row: EventRow): AgendaEvent | null {
     slug: pickString(row, ["slug"]) || undefined,
     title,
     city,
-    region: pickString(row, ["region_name", "region"], "France"),
+    region: pickString(row, ["region_name", "region"], "Territoire à confirmer"),
+    countryCode: eventCountryCode(row),
+    country: countryName(eventCountryCode(row)),
     type: pickString(row, ["type", "category", "event_type"], "rencontre").toLowerCase(),
     date,
     endDate: toIsoDate(pickString(row, ["end_date", "date_end", "ends_at"])) || undefined,
@@ -290,7 +295,7 @@ export function AgendaCalendar() {
                         <a className="agenda-hover-event" href={eventHref(event)} key={`${event.title}-${event.city}`}>
                           {hasVisibleTypeDot(event.type) ? <i className={typeClass(event.type)} /> : <i className="is-neutral" />}
                           <strong>{event.title}</strong>
-                          <small>{event.city}</small>
+                          <small>{event.city} · {event.country}</small>
                         </a>
                       ))}
                     </span>
@@ -311,7 +316,7 @@ export function AgendaCalendar() {
               <a className="agenda-event-row" href={eventHref(event)} key={`${event.title}-${event.city}-${event.date}`}>
                 <span className={`agenda-type-dot ${typeClass(event.type)}`} />
                 <strong>{event.title}</strong>
-                <small><MapPin size={13} /> {event.city}</small>
+                <small><MapPin size={13} /> {event.city} · {event.country}</small>
               </a>
             )) : (
               <div className="agenda-empty">

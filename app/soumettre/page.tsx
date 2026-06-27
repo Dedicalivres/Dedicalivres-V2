@@ -4,6 +4,11 @@ import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 import { ArrowLeft, ImagePlus, ShieldCheck, Sparkles, UploadCloud } from "lucide-react";
 import { FormEvent, useMemo, useState } from "react";
+import {
+  FRANCOPHONE_COUNTRIES,
+  countryTerritories,
+  type FrancophoneCountryCode,
+} from "@/lib/francophone";
 
 const R2_UPLOAD_ENDPOINT = "https://dedicalivres-r2-upload.dedicalivres.workers.dev/";
 const R2_PUBLIC_BASE_URL = "https://pub-45a59368068e48578d3b1a1bb519c543.r2.dev";
@@ -62,6 +67,7 @@ function buildSubmissionPayload(form: HTMLFormElement, imageUrl: string) {
   const type = String(data.get("type") || "").trim();
   const city = String(data.get("city") || "").trim();
   const region = String(data.get("region") || "").trim();
+  const countryCode = String(data.get("country_code") || "FR").trim();
   const startDate = String(data.get("start_date") || "").trim();
   const endDate = String(data.get("end_date") || "").trim();
   const website = String(data.get("website") || "").trim();
@@ -74,6 +80,7 @@ function buildSubmissionPayload(form: HTMLFormElement, imageUrl: string) {
     type,
     city,
     region,
+    country_code: countryCode,
     start_date: startDate || null,
     end_date: endDate || null,
     website: website || null,
@@ -114,6 +121,7 @@ async function insertSubmission(payload: Record<string, unknown>) {
       "type",
       "city",
       "region",
+      "country_code",
       "start_date",
       "end_date",
       "website",
@@ -127,6 +135,7 @@ async function insertSubmission(payload: Record<string, unknown>) {
       "title",
       "city",
       "region",
+      "country_code",
       "start_date",
       "description",
       "image_url",
@@ -136,6 +145,7 @@ async function insertSubmission(payload: Record<string, unknown>) {
       "title",
       "city",
       "region",
+      "country_code",
       "date",
       "description",
       "image_url",
@@ -160,8 +170,10 @@ export default function SubmitEventPage() {
   const [message, setMessage] = useState("");
   const [imagePreview, setImagePreview] = useState("");
   const [selectedFileName, setSelectedFileName] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState<FrancophoneCountryCode>("FR");
 
   const isBusy = state === "uploading" || state === "submitting";
+  const territoryOptions = useMemo(() => countryTerritories(selectedCountry), [selectedCountry]);
 
   const statusLabel = useMemo(() => {
     if (state === "uploading") return "Envoi de l’image...";
@@ -179,10 +191,11 @@ export default function SubmitEventPage() {
     const title = String(data.get("title") || "").trim();
     const city = String(data.get("city") || "").trim();
     const region = String(data.get("region") || "").trim();
+    const countryCode = String(data.get("country_code") || "").trim();
 
-    if (!title || !city || !region) {
+    if (!title || !city || !region || !countryCode) {
       setState("error");
-      setMessage("Merci de renseigner au minimum le titre, la ville et la région.");
+      setMessage("Merci de renseigner le titre, le pays, la ville et le territoire.");
       return;
     }
 
@@ -205,6 +218,7 @@ export default function SubmitEventPage() {
       setState("success");
       setMessage("Merci. L’événement a été transmis et devra être validé avant publication.");
       form.reset();
+      setSelectedCountry("FR");
       setImagePreview("");
       setSelectedFileName("");
     } catch (error) {
@@ -288,15 +302,34 @@ export default function SubmitEventPage() {
 
             <div className="submit-form-row">
               <label>
-                Ville *
-                <input name="city" required placeholder="Ex. Brest" />
+                Pays *
+                <select
+                  name="country_code"
+                  value={selectedCountry}
+                  onChange={(event) => setSelectedCountry(event.target.value as FrancophoneCountryCode)}
+                  required
+                >
+                  {FRANCOPHONE_COUNTRIES.map((country) => (
+                    <option key={country.code} value={country.code}>{country.flag} {country.name}</option>
+                  ))}
+                </select>
               </label>
 
               <label>
-                Région *
-                <input name="region" required placeholder="Ex. Bretagne" />
+                Ville *
+                <input name="city" required placeholder="Ex. Brest" />
               </label>
             </div>
+
+            <label>
+              Région, canton ou province *
+              <select key={selectedCountry} name="region" defaultValue="" required>
+                <option value="" disabled>Choisir un territoire</option>
+                {territoryOptions.map((territory) => (
+                  <option key={territory.code} value={territory.name}>{territory.name}</option>
+                ))}
+              </select>
+            </label>
 
             <div className="submit-form-row">
               <label>

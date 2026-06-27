@@ -21,15 +21,18 @@ export default function Page() {
             <span>01</span>
             <strong>Sélection éditoriale</strong>
             <p>Mettre en avant les rendez-vous majeurs.</p>
-          </div>\n          <div className="menu-feature-card">
+          </div>
+          <div className="menu-feature-card">
             <span>02</span>
             <strong>Événements récurrents</strong>
             <p>Préparer une logique de calendrier annuel.</p>
-          </div>\n          <div className="menu-feature-card">
+          </div>
+          <div className="menu-feature-card">
             <span>03</span>
-            <strong>Régions actives</strong>
-            <p>Relier les grands rendez-vous à la carte.</p>
-          </div>\n          <div className="menu-feature-card">
+            <strong>Territoires actifs</strong>
+            <p>Relier les grands rendez-vous aux pays, régions, cantons et provinces.</p>
+          </div>
+          <div className="menu-feature-card">
             <span>04</span>
             <strong>Pages SEO dédiées</strong>
             <p>Préparer la visibilité future des salons et festivals.</p>

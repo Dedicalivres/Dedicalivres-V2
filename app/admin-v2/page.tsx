@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Database, FileWarning, LockKeyhole, ShieldCheck, UserCog } from "lucide-react";
+import { ArrowLeft, Database, Download, ExternalLink, FileWarning, LockKeyhole, ShieldCheck, UserCog } from "lucide-react";
 
 const adminBlocks = [
   {
@@ -14,8 +14,8 @@ const adminBlocks = [
   },
   {
     icon: Database,
-    title: "Actions sensibles",
-    description: "Validation, suppression, statistiques et données privées devront passer par RLS/RPC sécurisées.",
+    title: "Données partagées",
+    description: "La V1 et la V2 lisent les mêmes événements, pays, auteurs et portraits validés dans Supabase.",
   },
   {
     icon: FileWarning,
@@ -45,7 +45,7 @@ export default function AdminV2Page() {
             <h1>Admin V2</h1>
             <p>
               Cette page est un jalon d’architecture. Elle prépare la future administration V2,
-              mais ne donne accès à aucune action sensible.
+              sans dupliquer les actions sensibles déjà sécurisées dans le centre de contrôle V1.
             </p>
           </div>
 
@@ -76,6 +76,28 @@ export default function AdminV2Page() {
           })}
         </div>
 
+        <section className="v2-extraction-bridge" aria-labelledby="v2-extraction-title">
+          <div>
+            <span className="event-module-label">Extraction francophone</span>
+            <h2 id="v2-extraction-title">Un seul centre sécurisé pour la V1 et la V2</h2>
+            <p>
+              Les deux versions utilisent les mêmes événements et le même champ pays. Les exports par
+              catégorie, pays et période restent produits depuis l’admin V1 authentifié, puis stockés
+              dans R2. Aucun secret n’est recopié dans la V2.
+            </p>
+          </div>
+          <a
+            className="event-main-action"
+            href="https://dedicalivres.fr/admin.html"
+            target="_blank"
+            rel="noreferrer"
+          >
+            <Download size={17} />
+            Ouvrir les extractions
+            <ExternalLink size={15} />
+          </a>
+        </section>
+
         <section className="security-rules-panel">
           <div className="security-rules-header">
             <ShieldCheck size={20} />
@@ -99,8 +121,8 @@ export default function AdminV2Page() {
               <p>Les actions sensibles doivent passer par des fonctions contrôlées.</p>
             </div>
             <div>
-              <strong>Logs plus tard</strong>
-              <p>Prévoir audit des validations, suppressions, exports et modifications.</p>
+              <strong>Exports centralisés</strong>
+              <p>Le Worker et R2 restent pilotés par l’admin V1 authentifié, compatible avec les données V2.</p>
             </div>
           </div>
         </section>

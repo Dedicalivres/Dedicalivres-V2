@@ -86,7 +86,7 @@ function value(row: AuthorRow, keys: string[]) {
 }
 
 function normalizeAuthor(row: AuthorRow, index: number): GalleryAuthor | null {
-  const photoUrl = value(row, ["photo_url", "image_url"]);
+  const photoUrl = value(row, ["avatar_url", "photo_url", "image_url", "author_portrait_url"]);
   if (!photoUrl) return null;
 
   const name = value(row, ["name", "full_name", "display_name", "nom", "author_name", "auteur"]);
@@ -99,6 +99,71 @@ function normalizeAuthor(row: AuthorRow, index: number): GalleryAuthor | null {
   const eventCount = toAuthorEventCount(row);
 
   return { id, name, photoUrl, meta, eventCount, award: getAwardForEventCount(eventCount) };
+}
+
+function normalizePresenceAuthor(row: AuthorRow, index: number): GalleryAuthor | null {
+  const photoUrl = value(row, ["author_portrait_url", "avatar_url", "photo_url"]);
+  const name = value(row, ["pseudo", "name", "author_name"]);
+  if (!photoUrl || !name) return null;
+
+  const id = value(row, ["author_identity_key", "author_id", "id"]) || `presence-${name}-${index}`;
+  const publisher = value(row, ["publisher_name"]);
+  const publicationMode = value(row, ["publication_mode"]);
+  const meta = publisher || (publicationMode && publicationMode !== "unknown" ? publicationMode : "Auteur déclaré présent");
+
+  return {
+    id,
+    name,
+    photoUrl,
+    meta,
+    eventCount: 0,
+  };
+}
+
+function dedupeGalleryAuthors(authors: GalleryAuthor[]) {
+  const seen = new Set<string>();
+
+  return authors.filter((author) => {
+    const key = normalizeText(author.name);
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+async function fetchPresencePortraitAuthors() {
+  if (!supabase) return [] as GalleryAuthor[];
+
+  const extendedResponse = await supabase
+    .from("event_authors_presence")
+    .select("id,author_id,author_identity_key,pseudo,author_portrait_url,publisher_name,publication_mode,event_id")
+    .eq("validated", true)
+    .or("rejected.is.null,rejected.eq.false")
+    .not("author_portrait_url", "is", null)
+    .limit(300);
+
+  let rows = extendedResponse.data as AuthorRow[] | null;
+  let error = extendedResponse.error;
+
+  if (error) {
+    const legacyResponse = await supabase
+      .from("event_authors_presence")
+      .select("id,pseudo,author_portrait_url,event_id")
+      .eq("validated", true)
+      .not("author_portrait_url", "is", null)
+      .limit(300);
+
+    rows = legacyResponse.data as AuthorRow[] | null;
+    error = legacyResponse.error;
+  }
+
+  if (error || !rows) return [];
+
+  const normalized = rows
+    .map((row, index) => normalizePresenceAuthor(row, index))
+    .filter(Boolean) as GalleryAuthor[];
+
+  return dedupeGalleryAuthors(normalized);
 }
 
 function toAuthorEventCount(row: AuthorRow) {
@@ -271,12 +336,26 @@ export function AuthorsFloatingGallery() {
           .filter(Boolean) as GalleryAuthor[];
 
         if (normalized.length) {
-          const enriched = await enrichAuthorsWithEventCounters(normalized);
+          const presencePortraits = await fetchPresencePortraitAuthors();
+          const enriched = await enrichAuthorsWithEventCounters(
+            dedupeGalleryAuthors([...normalized, ...presencePortraits]),
+          );
           if (cancelled) return;
           setAuthors(enriched);
           setStatus("ready");
           return;
         }
+      }
+
+      const presencePortraits = await fetchPresencePortraitAuthors();
+      if (cancelled) return;
+
+      if (presencePortraits.length) {
+        const enriched = await enrichAuthorsWithEventCounters(presencePortraits);
+        if (cancelled) return;
+        setAuthors(enriched);
+        setStatus("ready");
+        return;
       }
 
       setAuthors(TEMP_AUTHOR_FIXTURES);

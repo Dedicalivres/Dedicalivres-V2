@@ -1,6 +1,13 @@
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
-import { CalendarDays, Filter, MapPin, Search, Sparkles } from "lucide-react";
+import { CalendarDays, Filter, Globe2, MapPin, Search, Sparkles } from "lucide-react";
+import {
+  FRANCOPHONE_COUNTRIES,
+  countryLabel,
+  countryName,
+  countryTerritories,
+  eventCountryCode,
+} from "@/lib/francophone";
 
 type EventRow = Record<string, unknown>;
 type AuthorPresenceRow = Record<string, unknown>;
@@ -118,11 +125,11 @@ function uniqueValues(events: EventRow[], keys: string[]) {
 
 function stats(events: EventRow[]) {
   const upcoming = events.length;
-  const regions = uniqueValues(events, ["region", "region_name"]).length;
+  const countries = new Set(events.map((event) => eventCountryCode(event))).size;
   const cities = uniqueValues(events, ["city", "ville", "location", "lieu"]).length;
   const salons = events.filter((event) => eventType(event).toLowerCase().includes("salon")).length;
 
-  return { upcoming, regions, cities, salons };
+  return { upcoming, countries, cities, salons };
 }
 
 function eventId(event: EventRow) {
@@ -223,6 +230,7 @@ export default async function EventsPage({
   const regionFilter = String(params.region || "");
   const cityFilter = String(params.city || "");
   const typeFilter = String(params.type || "");
+  const countryFilter = String(params.country || "");
 
   const filteredEvents = events.filter((event) => {
     const title = value(event, ["title", "name", "event_title", "titre"]);
@@ -230,11 +238,14 @@ export default async function EventsPage({
     const region = value(event, ["region", "region_name"]);
     const description = value(event, ["description", "details", "summary", "content"]);
     const type = eventType(event);
+    const countryCode = eventCountryCode(event);
+    const country = countryName(countryCode);
     const declaredAuthors = authorPresencesByEvent.get(eventId(event)) || [];
 
-    const haystack = normalizeSearchText(`${title} ${city} ${region} ${description} ${type} ${declaredAuthors.join(" ")}`);
+    const haystack = normalizeSearchText(`${title} ${city} ${region} ${country} ${description} ${type} ${declaredAuthors.join(" ")}`);
 
     if (query && !haystack.includes(query)) return false;
+    if (countryFilter && countryCode !== countryFilter) return false;
     if (regionFilter && region !== regionFilter) return false;
     if (cityFilter && city !== cityFilter) return false;
     if (typeFilter && typeKey(type) !== typeFilter) return false;
@@ -242,8 +253,16 @@ export default async function EventsPage({
     return true;
   });
 
-  const regions = uniqueValues(events, ["region", "region_name"]);
-  const cities = uniqueValues(events, ["city", "ville", "location", "lieu"]);
+  const countryScopedEvents = countryFilter
+    ? events.filter((event) => eventCountryCode(event) === countryFilter)
+    : events;
+  const regions = Array.from(
+    new Set([
+      ...(countryFilter ? countryTerritories(countryFilter).map((territory) => territory.name) : []),
+      ...uniqueValues(countryScopedEvents, ["region", "region_name"]),
+    ]),
+  ).sort((a, b) => a.localeCompare(b, "fr"));
+  const cities = uniqueValues(countryScopedEvents, ["city", "ville", "location", "lieu"]);
   const searchSuggestions = Array.from(
     new Set([
       ...uniqueValues(events, ["title", "name", "event_title", "titre"]),
@@ -264,8 +283,8 @@ export default async function EventsPage({
           <p className="kicker">Agenda premium</p>
           <h1>Événements littéraires</h1>
           <p>
-            Retrouvez les rencontres, salons, festivals et dédicaces référencés dans Dédicalivres.
-            Cette page devient le complément naturel de la carte interactive.
+            Retrouvez les rencontres, salons, festivals et dédicaces référencés dans l’espace
+            francophone couvert par Dédicalivres.
           </p>
         </div>
 
@@ -275,8 +294,8 @@ export default async function EventsPage({
             <strong>{overview.upcoming}</strong>
           </div>
           <div>
-            <span>Régions</span>
-            <strong>{overview.regions}</strong>
+            <span>Pays</span>
+            <strong>{overview.countries}</strong>
           </div>
           <div>
             <span>Villes</span>
@@ -315,9 +334,19 @@ export default async function EventsPage({
           </label>
 
           <label>
+            <Globe2 size={16} />
+            <select name="country" defaultValue={countryFilter}>
+              <option value="">Tous les pays</option>
+              {FRANCOPHONE_COUNTRIES.map((country) => (
+                <option key={country.code} value={country.code}>{country.flag} {country.name}</option>
+              ))}
+            </select>
+          </label>
+
+          <label>
             <MapPin size={16} />
             <select name="region" defaultValue={regionFilter}>
-              <option value="">Toutes les régions</option>
+              <option value="">Toutes les régions / cantons</option>
               {regions.map((region) => (
                 <option key={region} value={region}>{region}</option>
               ))}
@@ -353,7 +382,7 @@ export default async function EventsPage({
           {filteredEvents.length === 0 ? (
             <div className="events-empty-state">
               <h2>Aucun événement trouvé.</h2>
-              <p>Essayez une autre ville, région, catégorie ou recherche.</p>
+              <p>Essayez un autre pays, territoire, ville, catégorie ou mot-clé.</p>
               <Link href="/#carte" className="event-main-action">Explorer la carte</Link>
             </div>
           ) : (
@@ -366,6 +395,7 @@ export default async function EventsPage({
               const description = value(event, ["description", "details", "summary", "content"], "");
               const type = eventType(event);
               const ended = isEventEnded(event);
+              const countryCode = eventCountryCode(event);
 
               return (
                 <Link href={eventRoute(event)} className={`event-vitrine-card ${ended ? "is-ended" : ""}`} key={eventRoute(event)}>
@@ -391,7 +421,7 @@ export default async function EventsPage({
                     <p>{description || "Découvrez les informations de cet événement dans sa fiche dédiée."}</p>
 
                     <div className="event-vitrine-footer">
-                      <span><MapPin size={14} /> {city}{region ? ` · ${region}` : ""}</span>
+                      <span><MapPin size={14} /> {city}{region ? ` · ${region}` : ""} · {countryLabel(countryCode)}</span>
                       <strong>Voir la fiche →</strong>
                     </div>
                   </div>

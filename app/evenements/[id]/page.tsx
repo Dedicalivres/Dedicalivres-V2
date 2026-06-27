@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 import { ArrowLeft, ExternalLink } from "lucide-react";
+import { countryLabel, eventCountryCode } from "@/lib/francophone";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -26,6 +27,7 @@ type AuthorPresence = {
   bookOrPublisherUrl: string;
   bookOrPublisherUrlType: string;
   publisherName: string;
+  portraitUrl: string;
   createdAt: string;
 };
 
@@ -111,6 +113,7 @@ function normalizePresenceRow(row: Record<string, unknown>): AuthorPresence | nu
     bookOrPublisherUrl: value(row, ["book_or_publisher_url"]),
     bookOrPublisherUrlType: value(row, ["book_or_publisher_url_type"]),
     publisherName: value(row, ["publisher_name"]),
+    portraitUrl: value(row, ["author_portrait_url", "avatar_url", "photo_url"]),
     createdAt: value(row, ["created_at"]),
   };
 }
@@ -137,6 +140,7 @@ function legacyAuthorsToPresence(authors: string[]) {
     bookOrPublisherUrl: "",
     bookOrPublisherUrlType: "",
     publisherName: "",
+    portraitUrl: "",
     createdAt: "",
   }));
 }
@@ -182,6 +186,11 @@ function getAuthorRole(author: AuthorPresence) {
 
 
 function getMapReturnHref(event: Record<string, unknown> | null) {
+  const countryCode = eventCountryCode(event);
+  if (countryCode !== "FR") {
+    return `/evenements?country=${encodeURIComponent(countryCode)}`;
+  }
+
   const city = value(event, ["city", "ville", "location", "lieu"]);
   const region = value(event, ["region", "region_name"]);
   const department = value(event, ["department", "departement", "department_code", "code_departement"]);
@@ -270,6 +279,7 @@ async function fetchRelatedEvents(
   const currentId = value(event, ["id", "event_id", "uuid"]);
   const city = value(event, ["city", "ville", "location", "lieu"]);
   const region = value(event, ["region", "region_name"]);
+  const countryCode = eventCountryCode(event);
   const eventDate = value(event, ["start_date", "date", "event_date", "starts_at"]);
 
   let query = supabase
@@ -284,6 +294,7 @@ async function fetchRelatedEvents(
   } else if (region) {
     query = query.eq("region", region);
   }
+  query = query.eq("country_code", countryCode);
 
   const { data, error } = await query;
 
@@ -315,6 +326,7 @@ async function fetchAuthorPresences(supabase: SupabaseEventClient, eventId: stri
     "book_or_publisher_url",
     "book_or_publisher_url_type",
     "publisher_name",
+    "author_portrait_url",
     "created_at",
   ].join(",");
 
@@ -380,6 +392,7 @@ export default async function EventPage({ params }: PageProps) {
   const title = value(event, ["title", "name", "event_title", "titre"], "Événement introuvable");
   const city = value(event, ["city", "ville", "location", "lieu"], "Ville à préciser");
   const region = value(event, ["region", "region_name"], "");
+  const countryCode = eventCountryCode(event);
   const startDate = value(event, ["start_date", "date", "event_date", "starts_at"], "");
   const endDate = value(event, ["end_date", "date_end", "ends_at"], "");
   const description = value(event, ["description", "details", "summary", "content"], "");
@@ -392,7 +405,7 @@ export default async function EventPage({ params }: PageProps) {
   const type = eventTypeLabel(value(event, ["type", "category", "source_label"], ""));
   const imageRatioClass = getImageRatioClass(event);
   const showDeclaredAuthors = authors.length > 0 && isSalonOrFestival(type);
-  const locationLabel = region ? `${city} · ${region}` : city;
+  const locationLabel = `${region ? `${city} · ${region}` : city} · ${countryLabel(countryCode)}`;
   const formattedStartDate = formatDate(startDate);
   const formattedEndDate = formatDate(endDate);
   const dateLabel = endDate && formattedEndDate !== formattedStartDate
@@ -454,8 +467,12 @@ export default async function EventPage({ params }: PageProps) {
                   <strong>{type}</strong>
                 </div>
                 <div>
-                  <span>Région</span>
+                  <span>Territoire</span>
                   <strong>{region || "À préciser"}</strong>
+                </div>
+                <div>
+                  <span>Pays</span>
+                  <strong>{countryLabel(countryCode)}</strong>
                 </div>
                 <div>
                   <span>Tarif</span>
@@ -516,7 +533,14 @@ export default async function EventPage({ params }: PageProps) {
                   <div className="event-author-cards">
                     {authors.map((author) => (
                       <Link className="event-author-card" href={getAuthorHref(author)} key={author.id || author.pseudo}>
-                        <span className="event-author-avatar">{getAuthorInitials(author.pseudo)}</span>
+                        <span className="event-author-avatar">
+                          {author.portraitUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={author.portraitUrl} alt="" />
+                          ) : (
+                            getAuthorInitials(author.pseudo)
+                          )}
+                        </span>
                         <span className="event-author-info">
                           <strong>{author.pseudo}</strong>
                           <em>{getAuthorRole(author)}</em>

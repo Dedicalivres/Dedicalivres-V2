@@ -24,11 +24,40 @@ function openEventPage(event: any) {
 
 
 import { type CSSProperties, type PointerEvent, useEffect, useMemo, useState } from "react";
-import { MapPin } from "lucide-react";
+import { Globe2, MapPin } from "lucide-react";
 import { DEPARTMENTS, MAP_VIEWBOX, REGIONS, type MapEvent } from "./mapData";
 import { supabase } from "@/lib/supabaseClient";
+import {
+  FRANCOPHONE_COUNTRIES,
+  countryMapAsset,
+  countryName,
+  countryTerritories,
+  eventCountryCode,
+  normalizeCountryCode,
+  normalizeTerritoryName,
+  type FrancophoneCountryCode,
+  type FrancophoneTerritory,
+} from "@/lib/francophone";
 
 type Level = "france" | "region" | "department" | "city";
+
+type FrancophoneMapEvent = {
+  id?: string;
+  slug?: string;
+  title: string;
+  city: string;
+  region: string;
+  countryCode: FrancophoneCountryCode;
+  country: string;
+  date: string;
+  type: MapEvent["type"];
+  authors: number;
+};
+
+type FrancophoneTerritoryGroup = FrancophoneTerritory & {
+  events: FrancophoneMapEvent[];
+  isUnknown?: boolean;
+};
 
 type MapFlowLink = {
   key: string;
@@ -452,7 +481,7 @@ function getEventTypeLabel(type?: MapEvent["type"]) {
   }
 }
 
-function getEventTypeSummary(eventList: MapEvent[]) {
+function getEventTypeSummary(eventList: Array<Pick<MapEvent, "type">>) {
   const counts = eventList.reduce<Record<string, number>>((acc, event) => {
     const label = getEventTypeLabel(event.type);
     acc[label] = (acc[label] || 0) + 1;
@@ -465,7 +494,7 @@ function getEventTypeSummary(eventList: MapEvent[]) {
     .join(" • ");
 }
 
-function getEventTypeCounts(eventList: MapEvent[]) {
+function getEventTypeCounts(eventList: Array<Pick<MapEvent, "type">>) {
   const order = ["salon", "festival", "dedicace", "conference", "atelier", "jeunesse", "autre"];
   const counts = eventList.reduce<Map<string, { type: string; label: string; count: number }>>((acc, event) => {
     const type = event.type || "autre";
@@ -578,7 +607,7 @@ function formatEventDateLabel(dateText: string) {
   }).format(parsed);
 }
 
-function getEventTimingCounts(eventList: MapEvent[]) {
+function getEventTimingCounts(eventList: Array<Pick<MapEvent, "date">>) {
   const today = getTodayNoon();
 
   return eventList.reduce(
@@ -603,7 +632,7 @@ function getEventTimingCounts(eventList: MapEvent[]) {
   );
 }
 
-function isEventEnded(event: MapEvent) {
+function isEventEnded(event: Pick<MapEvent, "date">) {
   const range = parseFrenchEventDate(event.date);
   if (!range || "upcomingFallback" in range) return false;
   return range.end < getTodayNoon();
@@ -627,6 +656,7 @@ function getFlowPath(from: { x: number; y: number }, to: { x: number; y: number 
 
 function normalizeSupabaseEvent(row: Record<string, unknown>): MapEvent | null {
   if (!isProbablyVisible(row)) return null;
+  if (eventCountryCode(row) !== "FR") return null;
 
   const eventId = pickString(row, ["id", "event_id", "uuid"]);
   const eventSlug = pickString(row, ["slug"]);
@@ -736,15 +766,96 @@ function normalizeSupabaseEvent(row: Record<string, unknown>): MapEvent | null {
   };
 }
 
+function normalizeFrancophoneEvent(row: Record<string, unknown>): FrancophoneMapEvent | null {
+  if (!isProbablyVisible(row)) return null;
+
+  const countryCode = eventCountryCode(row);
+  if (countryCode === "FR") return null;
+  const region = normalizeTerritoryName(
+    countryCode,
+    pickString(row, ["region", "region_name"], "Territoire à confirmer"),
+  );
+
+  return {
+    id: pickString(row, ["id", "event_id", "uuid"]) || undefined,
+    slug: pickString(row, ["slug"]) || undefined,
+    title: pickString(row, ["title", "name", "event_title", "nom", "titre"], "Événement Dédicalivres"),
+    city: pickString(row, ["city", "ville", "location", "lieu"], "Ville à préciser"),
+    region: region || "Territoire à confirmer",
+    countryCode,
+    country: countryName(countryCode),
+    date: formatEventDateLabel(
+      pickString(row, ["date", "event_date", "start_date", "date_start", "begin_date", "starts_at"], "À venir"),
+    ),
+    type: getEventType(row),
+    authors: pickNumber(row, ["authors_count", "author_count", "auteurs_count", "authors", "auteurs"]) ?? 1,
+  };
+}
+
+function getFrancophoneTerritoryGroups(
+  countryCode: FrancophoneCountryCode,
+  eventList: FrancophoneMapEvent[],
+): FrancophoneTerritoryGroup[] {
+  const territories = countryTerritories(countryCode);
+  const groups: FrancophoneTerritoryGroup[] = territories.map((territory) => ({
+    ...territory,
+    events: eventList.filter((event) => toKey(normalizeTerritoryName(countryCode, event.region)) === toKey(territory.name)),
+  }));
+
+  const knownNames = new Set(groups.map((group) => toKey(group.name)));
+  const extraRegions = new Map<string, FrancophoneMapEvent[]>();
+
+  eventList.forEach((event) => {
+    const normalized = normalizeTerritoryName(countryCode, event.region) || "Territoire à confirmer";
+    const key = toKey(normalized);
+    if (knownNames.has(key)) return;
+    extraRegions.set(key, [...(extraRegions.get(key) || []), event]);
+  });
+
+  Array.from(extraRegions.entries()).forEach(([key, eventsForRegion], index) => {
+    groups.push({
+      code: `extra-${key}`,
+      name: eventsForRegion[0]?.region || "Territoire à confirmer",
+      x: 18 + ((index * 23) % 64),
+      y: 22 + ((index * 19) % 58),
+      events: eventsForRegion,
+      isUnknown: true,
+    });
+  });
+
+  return groups;
+}
+
+function getFrancophoneStats(eventList: FrancophoneMapEvent[], territoryGroups: FrancophoneTerritoryGroup[]) {
+  return {
+    events: eventList.length,
+    authors: eventList.reduce((total, event) => total + (event.authors || 1), 0),
+    salons: eventList.filter((event) => event.type === "salon" || event.type === "festival").length,
+    territories: territoryGroups.filter((territory) => territory.events.length > 0).length,
+  };
+}
+
+function getFrancophoneCountrySubtitle(
+  countryCode: FrancophoneCountryCode,
+  selectedTerritory: string | null,
+  selectedCity: string | null,
+  eventCount: number,
+) {
+  if (selectedCity) return `Ville sélectionnée — ${eventPlural(eventCount)} disponible${eventCount > 1 ? "s" : ""}.`;
+  if (selectedTerritory) return `Territoire sélectionné — ${eventPlural(eventCount)}.`;
+  return `${countryName(countryCode)} — carte territoriale francophone.`;
+}
+
 
 function readMapReturnParams() {
   if (typeof window === "undefined") {
-    return { region: "", department: "", city: "" };
+    return { country: "", region: "", department: "", city: "" };
   }
 
   const params = new URLSearchParams(window.location.search);
 
   return {
+    country: params.get("country") || "",
     region: params.get("region") || "",
     department: params.get("department") || "",
     city: params.get("city") || "",
@@ -755,6 +866,7 @@ function clearMapReturnParams() {
   if (typeof window === "undefined") return;
 
   const url = new URL(window.location.href);
+  url.searchParams.delete("country");
   url.searchParams.delete("region");
   url.searchParams.delete("department");
   url.searchParams.delete("city");
@@ -762,11 +874,15 @@ function clearMapReturnParams() {
 }
 
 export function ImmersiveMap() {
+  const [selectedCountry, setSelectedCountry] = useState<FrancophoneCountryCode>("FR");
   const [level, setLevel] = useState<Level>("france");
   const [selectedRegion, setSelectedRegion] = useState<RegionCode | null>(null);
   const [selectedDepartment, setSelectedDepartment] = useState<DepartmentCode | null>(null);
   const [selectedCity, setSelectedCity] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<MapEvent | null>(null);
+  const [selectedFrancophoneRegion, setSelectedFrancophoneRegion] = useState<string | null>(null);
+  const [selectedFrancophoneCity, setSelectedFrancophoneCity] = useState<string | null>(null);
+  const [selectedFrancophoneEvent, setSelectedFrancophoneEvent] = useState<FrancophoneMapEvent | null>(null);
 
   const [hoveredRegion, setHoveredRegion] = useState<RegionCode | null>(null);
   const [hoveredDepartment, setHoveredDepartment] = useState<DepartmentCode | null>(null);
@@ -785,9 +901,27 @@ export function ImmersiveMap() {
   useEffect(() => {
     const desired = readMapReturnParams();
 
-    if (!desired.region && !desired.department && !desired.city) return;
+    if (!desired.country && !desired.region && !desired.department && !desired.city) return;
 
     const timer = window.setTimeout(() => {
+      const desiredCountry = desired.country ? normalizeCountryCode(desired.country) : "FR";
+
+      if (desiredCountry !== "FR") {
+        setSelectedCountry(desiredCountry);
+        setSelectedFrancophoneRegion(
+          desired.region ? normalizeTerritoryName(desiredCountry, desired.region) : null,
+        );
+        setSelectedFrancophoneCity(desired.city || null);
+        setSelectedFrancophoneEvent(null);
+
+        const mapElement = document.getElementById("carte");
+        mapElement?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+        clearMapReturnParams();
+        return;
+      }
+
+      setSelectedCountry("FR");
       const desiredRegion = normalizeRegionCode(desired.region);
       const desiredDepartment = normalizeDepartmentCode(desired.department);
 
@@ -817,7 +951,46 @@ export function ImmersiveMap() {
 
   const [zoomMotion, setZoomMotion] = useState<"zoom-in" | "zoom-out">("zoom-out");
   const [events, setEvents] = useState<MapEvent[]>([]);
+  const [francophoneEvents, setFrancophoneEvents] = useState<FrancophoneMapEvent[]>([]);
   const mapEvents = useMemo(() => events.filter((event) => !isEventEnded(event)), [events]);
+  const activeFrancophoneEvents = useMemo(
+    () => francophoneEvents.filter((event) => !isEventEnded(event)),
+    [francophoneEvents],
+  );
+  const selectedCountryMeta = useMemo(
+    () => FRANCOPHONE_COUNTRIES.find((country) => country.code === selectedCountry) || FRANCOPHONE_COUNTRIES[0],
+    [selectedCountry],
+  );
+  const selectedCountryAsset = countryMapAsset(selectedCountry);
+  const activeCountryEvents = useMemo(
+    () => activeFrancophoneEvents.filter((event) => event.countryCode === selectedCountry),
+    [activeFrancophoneEvents, selectedCountry],
+  );
+  const francophoneTerritoryGroups = useMemo(
+    () => selectedCountry === "FR" ? [] : getFrancophoneTerritoryGroups(selectedCountry, activeCountryEvents),
+    [activeCountryEvents, selectedCountry],
+  );
+  const activeFrancophoneTerritory = useMemo(() => {
+    if (!selectedFrancophoneRegion) return null;
+    return francophoneTerritoryGroups.find(
+      (territory) => toKey(territory.name) === toKey(selectedFrancophoneRegion),
+    ) || null;
+  }, [francophoneTerritoryGroups, selectedFrancophoneRegion]);
+  const francophonePanelEvents = useMemo(() => {
+    if (selectedFrancophoneEvent) return [selectedFrancophoneEvent];
+    if (selectedFrancophoneCity) {
+      return activeCountryEvents.filter((event) => toKey(event.city) === toKey(selectedFrancophoneCity));
+    }
+    if (selectedFrancophoneRegion) {
+      return activeCountryEvents.filter(
+        (event) => toKey(normalizeTerritoryName(selectedCountry, event.region)) === toKey(selectedFrancophoneRegion),
+      );
+    }
+    return activeCountryEvents;
+  }, [activeCountryEvents, selectedCountry, selectedFrancophoneCity, selectedFrancophoneEvent, selectedFrancophoneRegion]);
+  const francophonePanelStats = getFrancophoneStats(francophonePanelEvents, francophoneTerritoryGroups);
+  const francophoneTemporalStats = getEventTimingCounts(francophonePanelEvents);
+  const francophonePanelTitle = selectedFrancophoneEvent?.title || selectedFrancophoneCity || selectedFrancophoneRegion || selectedCountryMeta.name;
 
   useEffect(() => {
     let cancelled = false;
@@ -825,6 +998,7 @@ export function ImmersiveMap() {
     async function loadEvents() {
       if (!supabase) {
         setEvents([]);
+        setFrancophoneEvents([]);
         return;
       }
 
@@ -840,6 +1014,7 @@ export function ImmersiveMap() {
       if (error) {
         console.warn("[Dédicalivres V2] Lecture Supabase impossible.", error);
         setEvents([]);
+        setFrancophoneEvents([]);
         return;
       }
 
@@ -847,12 +1022,12 @@ export function ImmersiveMap() {
       const normalized = rows
         .map((row) => normalizeSupabaseEvent(row))
         .filter(Boolean) as MapEvent[];
+      const normalizedFrancophone = rows
+        .map((row) => normalizeFrancophoneEvent(row))
+        .filter(Boolean) as FrancophoneMapEvent[];
 
-      if (normalized.length) {
-        setEvents(normalized);
-      } else {
-        setEvents([]);
-      }
+      setEvents(normalized);
+      setFrancophoneEvents(normalizedFrancophone);
     }
 
     loadEvents();
@@ -1156,7 +1331,7 @@ export function ImmersiveMap() {
   }, [cameraView.scale, cameraView.tx, cameraView.ty, cityClusters, isCompactMap, mapEvents, level, selectedCity, selectedDepartment, selectedRegion]);
 
 
-  const panelTitle = selectedEvent?.title || selectedCity || activeDepartment?.name || activeRegion?.name || "France littéraire";
+  const panelTitle = selectedEvent?.title || selectedCity || activeDepartment?.name || activeRegion?.name || "Carte détaillée";
   const regionStats = getRegionStats(mapEvents, activeRegionCode || undefined);
   const departmentStats = getDepartmentStats(mapEvents, activeDepartmentCode || undefined);
   const cityStats = getCityStats(mapEvents, selectedCity || undefined);
@@ -1176,7 +1351,7 @@ export function ImmersiveMap() {
         ? events.filter((event) => event.region === activeRegionCode)
         : events;
   const temporalStats = getEventTimingCounts(panelTimingEvents);
-  const nationalInsights = useMemo(() => {
+	  const nationalInsights = useMemo(() => {
     const activeRegions = REGIONS
       .map((region) => ({
         region,
@@ -1186,9 +1361,43 @@ export function ImmersiveMap() {
     const topRegion = activeRegions.find((item) => item.events.length > 0);
     const typeCounts = getEventTypeCounts(events).slice(0, 3);
     const timing = getEventTimingCounts(events);
-
-    return { topRegion, typeCounts, timing };
+	
+	  return { topRegion, typeCounts, timing };
   }, [events]);
+
+  function clearFranceFocus() {
+    setSelectedEvent(null);
+    setZoomMotion("zoom-out");
+    setLevel("france");
+    setSelectedRegion(null);
+    setSelectedDepartment(null);
+    setSelectedCity(null);
+    setHoveredRegion(null);
+    setHoveredDepartment(null);
+  }
+
+  function clearFrancophoneFocus() {
+    setSelectedFrancophoneRegion(null);
+    setSelectedFrancophoneCity(null);
+    setSelectedFrancophoneEvent(null);
+  }
+
+  function selectCountry(code: FrancophoneCountryCode) {
+    setSelectedCountry(code);
+    clearFrancophoneFocus();
+    clearFranceFocus();
+  }
+
+  function selectFrancophoneTerritory(territory: FrancophoneTerritoryGroup) {
+    setSelectedFrancophoneEvent(null);
+    setSelectedFrancophoneCity(null);
+    setSelectedFrancophoneRegion(territory.name);
+  }
+
+  function selectFrancophoneCity(city: string) {
+    setSelectedFrancophoneEvent(null);
+    setSelectedFrancophoneCity(city);
+  }
 
   function selectRegion(code: RegionCode) {
     setSelectedEvent(null);
@@ -1241,6 +1450,28 @@ export function ImmersiveMap() {
   }
 
   function resetFrance() {
+    setSelectedCountry("FR");
+    clearFrancophoneFocus();
+    clearFranceFocus();
+  }
+
+  function handleFrancophoneMapBackgroundClick() {
+    if (selectedFrancophoneEvent) {
+      setSelectedFrancophoneEvent(null);
+      return;
+    }
+
+    if (selectedFrancophoneCity) {
+      setSelectedFrancophoneCity(null);
+      return;
+    }
+
+    if (selectedFrancophoneRegion) {
+      setSelectedFrancophoneRegion(null);
+    }
+  }
+
+  function resetFranceFocusOnly() {
     setSelectedEvent(null);
     setZoomMotion("zoom-out");
     setLevel("france");
@@ -1271,7 +1502,7 @@ export function ImmersiveMap() {
     }
 
     if (level === "region") {
-      resetFrance();
+      resetFranceFocusOnly();
     }
   }
 
@@ -1291,12 +1522,236 @@ export function ImmersiveMap() {
   return (
     <section className="section map-section real-france-section" id="carte">
       <div className="section-header map-heading">
-        <p className="eyebrow">France littéraire interactive</p>
-        <h2>Explorez la vie littéraire française.</h2>
-        <p className="map-intro">France → régions → départements → événements. La carte devient l’entrée naturelle vers les rencontres.</p>
+        <p className="eyebrow">Carte littéraire francophone</p>
+        <h2>Explorez les rencontres par territoire.</h2>
+        <p className="map-intro">
+          La carte détaillée française reste disponible, et les autres territoires francophones
+          suivent la même logique de lecture, sans placement géographique approximatif.
+        </p>
       </div>
 
-      <div className="real-map-shell">
+      <div className="francophone-country-strip" aria-label="Territoires francophones couverts">
+        {FRANCOPHONE_COUNTRIES.map((country) => {
+          const count = country.code === "FR"
+            ? mapEvents.length
+            : activeFrancophoneEvents.filter((event) => event.countryCode === country.code).length;
+
+          return (
+            <button
+              type="button"
+              className={`francophone-country-chip ${country.code === "FR" ? "is-detailed" : ""} ${selectedCountry === country.code ? "is-active" : ""}`}
+              onClick={() => selectCountry(country.code)}
+              key={country.code}
+            >
+              <span>{country.flag}</span>
+              <strong>{country.name}</strong>
+              <small>{count}</small>
+            </button>
+          );
+        })}
+      </div>
+
+      {activeFrancophoneEvents.length > 0 && (
+        <section className="francophone-event-rail" aria-labelledby="francophone-event-rail-title">
+          <div className="francophone-event-rail-head">
+            <Globe2 size={20} />
+            <div>
+              <span>Territoires francophones</span>
+              <h3 id="francophone-event-rail-title">Prochaines rencontres francophones</h3>
+            </div>
+          </div>
+          <div className="francophone-event-rail-grid">
+            {activeFrancophoneEvents.slice(0, 8).map((event) => (
+              <a href={getEventHref(event) || `/evenements?country=${event.countryCode}`} key={`${event.id || event.slug}-${event.title}`}>
+                <span>{event.country}</span>
+                <strong>{event.title}</strong>
+                <small><MapPin size={13} /> {event.city} · {event.region}</small>
+                <em>{event.date}</em>
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {selectedCountry !== "FR" && (
+        <div className="real-map-shell francophone-map-shell" id={`carte-${selectedCountry.toLowerCase()}`}>
+          <div className="real-map-card francophone-map-card">
+            <div className="map-breadcrumb" aria-label="Navigation carte francophone">
+              <button type="button" onClick={() => selectCountry(selectedCountry)}>
+                {selectedCountryMeta.flag} {selectedCountryMeta.name}
+              </button>
+              {selectedFrancophoneRegion && (
+                <>
+                  <span>/</span>
+                  <button type="button" onClick={() => { setSelectedFrancophoneCity(null); setSelectedFrancophoneEvent(null); }}>
+                    {selectedFrancophoneRegion}
+                  </button>
+                </>
+              )}
+              {selectedFrancophoneCity && (
+                <>
+                  <span>/</span>
+                  <strong>{selectedFrancophoneCity}</strong>
+                </>
+              )}
+            </div>
+
+            <div className="map-stage francophone-map-stage" onClick={handleFrancophoneMapBackgroundClick} onPointerMove={handleMapStagePointerMove} onPointerLeave={handleMapStagePointerLeave}>
+              <div className="francophone-map-canvas">
+                <div className="francophone-map-atmosphere" aria-hidden="true" />
+                {selectedCountryAsset ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    className="francophone-map-image"
+                    src={selectedCountryAsset}
+                    alt={`Carte de ${selectedCountryMeta.name}`}
+                  />
+                ) : (
+                  <div className="francophone-map-fallback" aria-hidden="true">
+                    <Globe2 size={92} />
+                  </div>
+                )}
+
+                <div className="francophone-map-overlay">
+                  {francophoneTerritoryGroups.map((territory) => {
+                    const isSelected = selectedFrancophoneRegion && toKey(selectedFrancophoneRegion) === toKey(territory.name);
+                    const typeCounts = getEventTypeCounts(territory.events);
+
+                    return (
+                      <button
+                        type="button"
+                        className={`map-info-bubble overlay-region francophone-territory-bubble ${territory.events.length ? "has-events" : "is-empty"} ${isSelected ? "is-focus" : ""}`}
+                        key={territory.code}
+                        style={{ left: `${territory.x}%`, top: `${territory.y}%` } as CSSProperties}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          selectFrancophoneTerritory(territory);
+                        }}
+                      >
+                        <strong>{territory.name}</strong>
+                        <small className="map-info-count">{territory.events.length}</small>
+                        <span className="map-info-types" aria-hidden="true">
+                          {typeCounts.slice(0, 3).map((type) => (
+                            <i className={`map-info-type event-type-${type.type}`} key={type.type}>
+                              {type.count > 1 ? type.count : ""}
+                            </i>
+                          ))}
+                        </span>
+                        <span className="map-info-popover" aria-hidden="true">
+                          <b>{territory.events.length ? eventPlural(territory.events.length) : "Aucun événement à venir"}</b>
+                          {typeCounts.length > 0 ? (
+                            typeCounts.slice(0, 4).map((type) => (
+                              <span key={type.type}>
+                                <i className={`map-info-type event-type-${type.type}`} />
+                                {type.count} {type.label.toLowerCase()}
+                              </span>
+                            ))
+                          ) : (
+                            <span>Ce territoire est prêt à recevoir les prochains événements validés.</span>
+                          )}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <aside className="real-map-panel francophone-map-panel">
+            <p className="panel-kicker">
+              {selectedFrancophoneCity ? "Ville active" : selectedFrancophoneRegion ? "Territoire actif" : "Pays actif"}
+            </p>
+            <h3>{francophonePanelTitle}</h3>
+            <p className="panel-subtitle">
+              {selectedFrancophoneEvent
+                ? `${selectedFrancophoneEvent.city} — ${selectedFrancophoneEvent.date}`
+                : getFrancophoneCountrySubtitle(selectedCountry, selectedFrancophoneRegion, selectedFrancophoneCity, francophonePanelEvents.length)}
+            </p>
+
+            <div className="stat-grid refined-stats">
+              <div><strong>{francophonePanelStats.events}</strong><span>rencontres actives</span></div>
+              <div><strong>{francophonePanelStats.authors}</strong><span>auteurs</span></div>
+              <div><strong>{francophonePanelStats.salons}</strong><span>salons / festivals</span></div>
+              <div><strong>{francophonePanelStats.territories}</strong><span>territoires</span></div>
+            </div>
+
+            <div className="terrain-profile temporal-profile" aria-label="État des événements du pays">
+              <div>
+                <span>Vue temporelle</span>
+                <strong>{eventPlural(francophonePanelEvents.length)}</strong>
+                <small>sur la sélection courante</small>
+              </div>
+              <ul className="temporal-status-list">
+                <li><strong>{francophoneTemporalStats.ongoing}</strong><span>en cours</span></li>
+                <li><strong>{francophoneTemporalStats.upcoming}</strong><span>à venir</span></li>
+                <li><strong>{francophoneTemporalStats.ended}</strong><span>terminés</span></li>
+              </ul>
+            </div>
+
+            <div className="panel-events">
+              {selectedFrancophoneEvent ? (
+                <article className="panel-event-card event-detail-card">
+                  <span>{selectedFrancophoneEvent.date}</span>
+                  <strong>{selectedFrancophoneEvent.title}</strong>
+                  <small><MapPin size={13} /> {selectedFrancophoneEvent.city} · {selectedFrancophoneEvent.region}</small>
+                  <p className="event-detail-note">Événement sélectionné depuis la carte.</p>
+                  {getEventHref(selectedFrancophoneEvent) && (
+                    <a className="event-detail-link premium-dark-action" href={getEventHref(selectedFrancophoneEvent)!}>
+                      Voir la fiche événement →
+                    </a>
+                  )}
+                  <button type="button" className="ghost-map-button small-action premium-dark-secondary" onClick={() => setSelectedFrancophoneEvent(null)}>
+                    Revenir à la liste
+                  </button>
+                </article>
+              ) : francophonePanelEvents.length ? (
+                francophonePanelEvents.slice(0, 7).map((event) => (
+                  <button
+                    type="button"
+                    key={`${event.title}-${event.city}-${event.date}`}
+                    className="panel-event-card event-card-button premium-event-list-action"
+                    onClick={() => {
+                      if (francophonePanelEvents.length === 1) {
+                        openEventPage(event);
+                        return;
+                      }
+                      setSelectedFrancophoneEvent(event);
+                    }}
+                  >
+                    <span>{event.date}</span>
+                    <strong>{event.title}</strong>
+                    <small><MapPin size={13} /> {event.city} · {event.region}</small>
+                  </button>
+                ))
+              ) : (
+                <article className="panel-event-card muted-card">
+                  <span>Aucun événement actif</span>
+                  <strong>Ce territoire est prêt, mais aucun événement à venir n’y est encore validé.</strong>
+                  <small>Les prochains ajouts apparaîtront automatiquement ici.</small>
+                </article>
+              )}
+            </div>
+
+            <div className="panel-actions">
+              <a
+                className="discover-region-button"
+                href={`/evenements?country=${selectedCountry}${selectedFrancophoneRegion ? `&region=${encodeURIComponent(selectedFrancophoneRegion)}` : ""}${selectedFrancophoneCity ? `&city=${encodeURIComponent(selectedFrancophoneCity)}` : ""}`}
+              >
+                Voir dans l’agenda
+              </a>
+              {selectedFrancophoneRegion && (
+                <button type="button" className="ghost-map-button small-action premium-dark-secondary" onClick={clearFrancophoneFocus}>
+                  Revenir au pays
+                </button>
+              )}
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {selectedCountry === "FR" && (
+      <div className="real-map-shell" id="carte-france">
         <div className="real-map-card">
           <div className="map-breadcrumb" aria-label="Navigation carte">
             <button type="button" onClick={resetFrance}>France</button>
@@ -1734,7 +2189,7 @@ export function ImmersiveMap() {
         </div>
 
         <aside className="real-map-panel">
-          <p className="panel-kicker">{selectedCity ? "Ville active" : activeDepartment ? "Département actif" : activeRegion ? "Région active" : "France active"}</p>
+          <p className="panel-kicker">{selectedCity ? "Ville active" : activeDepartment ? "Département actif" : activeRegion ? "Région active" : "Carte détaillée"}</p>
           <h3>{panelTitle}</h3>
           <p className="panel-subtitle">
             {selectedEvent
@@ -1849,6 +2304,7 @@ export function ImmersiveMap() {
           </div>
         </aside>
       </div>
+      )}
     </section>
   );
 }

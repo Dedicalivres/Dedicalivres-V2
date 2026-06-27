@@ -3,8 +3,8 @@ import "./globals.css";
 import MainNavigation from "@/components/MainNavigation";
 
 export const metadata: Metadata = {
-  title: "Dédicalivres Immersive V2 — Émeraude Prestige",
-  description: "Hero premium, Livre Vivant V1 et teaser France immersive pour Dédicalivres V2.",
+  title: "Dédicalivres Immersive V2 — Agenda littéraire francophone",
+  description: "Salons, festivals, dédicaces et rencontres littéraires dans l’espace francophone.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

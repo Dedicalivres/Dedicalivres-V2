@@ -5,13 +5,13 @@ const futureBlocks = [
   {
     icon: Bookmark,
     title: "Favoris",
-    description: "Préparer le suivi d’événements, villes, régions et auteurs sans activer de compte public maintenant.",
+    description: "Préparer le suivi d’événements, villes, territoires et auteurs sans activer de compte public maintenant.",
     status: "Prévu",
   },
   {
     icon: Bell,
     title: "Alertes personnalisées",
-    description: "Recevoir plus tard des alertes par région, ville, type d’événement ou auteur suivi.",
+    description: "Recevoir plus tard des alertes par pays, territoire, ville, type d’événement ou auteur suivi.",
     status: "Architecture",
   },
   {
