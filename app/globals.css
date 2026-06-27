@@ -17186,3 +17186,402 @@ body:has(.tab-dashboard) .home-shell .nav-item span {
     display: none !important;
   }
 }
+
+/* V2 francophone — extension territoriale sans modifier la carte France */
+.events-filter-panel {
+  grid-template-columns: minmax(260px, 1.45fr) repeat(4, minmax(145px, .72fr)) auto auto;
+}
+
+.tab-search-form {
+  grid-template-columns: minmax(220px, 1.35fr) repeat(4, minmax(120px, .66fr)) auto;
+}
+
+.francophone-country-strip {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 18px;
+}
+
+.francophone-country-chip {
+  border: 0;
+  min-width: 0;
+  min-height: 62px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 14px;
+  border: 1px solid rgba(212, 177, 106, .2);
+  border-radius: 18px;
+  color: rgba(245, 242, 234, .86);
+  font: inherit;
+  text-align: left;
+  background:
+    radial-gradient(circle at 12% 12%, rgba(56, 201, 155, .13), transparent 38%),
+    rgba(4, 18, 15, .78);
+  cursor: pointer;
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+
+.francophone-country-chip:hover {
+  transform: translateY(-2px);
+  border-color: rgba(212, 177, 106, .48);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .22);
+}
+
+.francophone-country-chip.is-detailed {
+  border-color: rgba(56, 201, 155, .42);
+}
+
+.francophone-country-chip.is-active {
+  color: #f5f2ea;
+  border-color: rgba(212, 177, 106, .74);
+  background:
+    radial-gradient(circle at 15% 10%, rgba(212, 177, 106, .22), transparent 42%),
+    linear-gradient(135deg, rgba(11, 44, 35, .94), rgba(5, 18, 15, .9));
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, .28),
+    0 0 0 1px rgba(212, 177, 106, .12) inset,
+    0 0 26px rgba(56, 201, 155, .16);
+}
+
+.francophone-country-chip > span {
+  font-size: 1.3rem;
+}
+
+.francophone-country-chip strong {
+  overflow: hidden;
+  font-size: .9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.francophone-country-chip small {
+  min-width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  color: #07110e;
+  background: #d4b16a;
+  font-weight: 850;
+}
+
+.francophone-event-rail {
+  position: relative;
+  z-index: 2;
+  margin: 0 0 20px;
+  padding: 18px;
+  border: 1px solid rgba(212, 177, 106, .2);
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at 8% 12%, rgba(56, 201, 155, .12), transparent 34%),
+    rgba(3, 14, 11, .72);
+}
+
+.francophone-event-rail-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.francophone-event-rail-head svg {
+  margin-top: 3px;
+  color: #d4b16a;
+}
+
+.francophone-event-rail-head span {
+  display: block;
+  color: rgba(212, 177, 106, .8);
+  font-size: .7rem;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+}
+
+.francophone-event-rail-head h3 {
+  margin: 4px 0 0;
+  color: #f5f2ea;
+  font-family: var(--font-display, serif);
+  font-size: clamp(1.45rem, 2.4vw, 2.3rem);
+}
+
+.francophone-event-rail-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.francophone-event-rail-grid a {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+  padding: 14px;
+  border: 1px solid rgba(212, 177, 106, .16);
+  border-radius: 18px;
+  color: rgba(245, 242, 234, .9);
+  background: rgba(2, 10, 8, .58);
+}
+
+.francophone-event-rail-grid a > span {
+  color: #38c99b;
+  font-size: .72rem;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+
+.francophone-event-rail-grid strong {
+  line-height: 1.25;
+}
+
+.francophone-event-rail-grid small {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  color: rgba(245, 242, 234, .64);
+  line-height: 1.35;
+}
+
+.francophone-event-rail-grid em {
+  color: rgba(212, 177, 106, .86);
+  font-size: .82rem;
+  font-style: normal;
+}
+
+.francophone-map-shell {
+  isolation: isolate;
+}
+
+.francophone-map-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.francophone-map-card::before {
+  content: "";
+  position: absolute;
+  inset: 18px;
+  border: 1px solid rgba(212, 177, 106, .12);
+  border-radius: 26px;
+  pointer-events: none;
+}
+
+.francophone-map-stage {
+  min-height: 620px;
+  background:
+    linear-gradient(rgba(212, 177, 106, .035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(212, 177, 106, .035) 1px, transparent 1px),
+    radial-gradient(circle at calc(50% + var(--map-pointer-x, 0) * 9%) calc(45% + var(--map-pointer-y, 0) * 8%), rgba(112, 234, 190, .2), transparent 46%),
+    radial-gradient(circle at 50% 52%, rgba(212, 177, 106, .11), transparent 58%),
+    #06100d;
+  background-size: 34px 34px, 34px 34px, auto, auto, auto;
+}
+
+.francophone-map-canvas {
+  position: relative;
+  width: min(860px, 96%);
+  aspect-ratio: 1.18;
+  display: grid;
+  place-items: center;
+}
+
+.francophone-map-atmosphere {
+  position: absolute;
+  inset: 4%;
+  border-radius: 36px;
+  background:
+    radial-gradient(circle at 28% 22%, rgba(212, 177, 106, .18), transparent 34%),
+    radial-gradient(circle at 62% 62%, rgba(56, 201, 155, .16), transparent 42%),
+    linear-gradient(145deg, rgba(245, 242, 234, .04), rgba(245, 242, 234, .01));
+  box-shadow: inset 0 0 90px rgba(112, 234, 190, .08);
+}
+
+.francophone-map-image,
+.francophone-map-fallback {
+  position: relative;
+  z-index: 2;
+  width: min(78%, 620px);
+  height: min(78%, 520px);
+  object-fit: contain;
+  opacity: .9;
+  filter:
+    drop-shadow(0 24px 42px rgba(0, 0, 0, .36))
+    drop-shadow(0 0 26px rgba(56, 201, 155, .16));
+}
+
+.francophone-map-fallback {
+  display: grid;
+  place-items: center;
+  color: rgba(212, 177, 106, .5);
+  border: 1px dashed rgba(212, 177, 106, .22);
+  border-radius: 34px;
+  background: rgba(245, 242, 234, .035);
+}
+
+.francophone-map-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+}
+
+.francophone-territory-bubble {
+  min-width: 106px;
+}
+
+.francophone-territory-bubble.is-empty {
+  transform: translate(-50%, -50%) scale(.9);
+}
+
+.francophone-map-panel .panel-events {
+  max-height: 330px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.francophone-map-panel .panel-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: auto;
+}
+
+.event-author-avatar {
+  overflow: hidden;
+}
+
+.event-author-avatar img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.event-practical-summary {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.v2-extraction-bridge {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: center;
+  margin-top: 30px;
+  padding: 22px;
+  border: 1px solid rgba(56, 201, 155, .3);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 10% 12%, rgba(56, 201, 155, .15), transparent 38%),
+    linear-gradient(145deg, rgba(7, 32, 26, .72), rgba(2, 10, 8, .9));
+}
+
+.v2-extraction-bridge h2 {
+  margin: 5px 0 10px;
+  color: #f5f2ea;
+  font-family: var(--font-display, serif);
+  font-size: clamp(1.8rem, 3vw, 3.2rem);
+  line-height: 1;
+}
+
+.v2-extraction-bridge p {
+  max-width: 760px;
+  margin: 0;
+  color: rgba(245, 242, 234, .68);
+  line-height: 1.55;
+}
+
+.v2-extraction-bridge .event-main-action {
+  white-space: nowrap;
+}
+
+@media (max-width: 1320px) {
+  .events-filter-panel,
+  .tab-search-form {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .francophone-event-rail-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .francophone-country-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .francophone-country-chip:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .francophone-event-rail-grid,
+  .v2-extraction-bridge {
+    grid-template-columns: 1fr;
+  }
+
+  .event-practical-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .v2-extraction-bridge .event-main-action {
+    justify-self: start;
+  }
+}
+
+@media (max-width: 560px) {
+  .francophone-country-chip {
+    min-height: 54px;
+    padding: 10px;
+  }
+
+  .francophone-country-chip strong {
+    font-size: .78rem;
+  }
+
+  .francophone-country-chip small {
+    min-width: 24px;
+    height: 24px;
+    font-size: .72rem;
+  }
+
+  .francophone-event-rail {
+    padding: 14px;
+    border-radius: 22px;
+  }
+
+  .event-practical-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =====================================================================
+   CORRECTIF AFFICHAGE CALENDRIER AGENDA (2026-06-27)
+   Problème : l'onglet agenda était verrouillé à la hauteur de l'écran
+   (height: 100vh + overflow: hidden). Sur les écrans courts, les rangées
+   du mois (hauteur mini 66px) débordaient de leurs cases, se chevauchaient
+   et étaient coupées en bas.
+   Correctif : on libère la hauteur de l'onglet agenda (il peut grandir et
+   la page défile), et on garantit une hauteur de rangée pour empêcher tout
+   chevauchement. Les autres onglets ne sont pas touchés.
+   ===================================================================== */
+@media (min-width: 761px) {
+  .app-tab-panel.agenda-tab {
+    height: auto;
+    min-height: calc(100vh - 20px);
+    overflow: visible;
+  }
+
+  .agenda-tab {
+    overflow: visible;
+  }
+
+  .agenda-calendar {
+    height: auto;
+  }
+
+  .agenda-month-grid {
+    grid-auto-rows: minmax(66px, auto);
+  }
+}
