@@ -1,5 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, ShieldCheck, Sparkles } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Salons & festivals du livre francophones",
+  description:
+    "Découvrez les salons du livre et festivals littéraires en France, Belgique, Suisse, Luxembourg et Monaco référencés par Dédicalivres.",
+  alternates: { canonical: "/salons-festivals" },
+};
 
 export default function Page() {
   return (

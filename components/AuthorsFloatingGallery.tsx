@@ -499,7 +499,7 @@ export function AuthorsFloatingGallery() {
             >
               <div className="floating-author-portrait">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={author.photoUrl} alt={author.name} draggable={false} />
+                <img src={author.photoUrl} alt={author.name} draggable={false} loading="lazy" decoding="async" />
                 {award && (
                   <div className="portrait-award" aria-label={`${awardLabel}, ${award.events} événements référencés`}>
                     <span className="portrait-award-ribbon" />

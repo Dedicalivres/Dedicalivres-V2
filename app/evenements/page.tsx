@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 import { CalendarDays, Filter, Globe2, MapPin, Search, Sparkles } from "lucide-react";
@@ -8,6 +9,13 @@ import {
   countryTerritories,
   eventCountryCode,
 } from "@/lib/francophone";
+
+export const metadata: Metadata = {
+  title: "Tous les événements littéraires francophones",
+  description:
+    "Recherchez salons du livre, festivals et dédicaces par pays, territoire, ville ou mot-clé en France, Belgique, Suisse, Luxembourg et Monaco.",
+  alternates: { canonical: "/evenements" },
+};
 
 type EventRow = Record<string, unknown>;
 type AuthorPresenceRow = Record<string, unknown>;
@@ -402,7 +410,7 @@ export default async function EventsPage({
                   <div className="event-vitrine-image">
                     {imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={imageUrl} alt={title} />
+                      <img src={imageUrl} alt={title} loading="lazy" decoding="async" />
                     ) : (
                       <div className="event-vitrine-placeholder">
                         <span>{type}</span>

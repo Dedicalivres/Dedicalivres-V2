@@ -1,7 +1,8 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 import { ArrowLeft, ExternalLink } from "lucide-react";
-import { countryLabel, eventCountryCode } from "@/lib/francophone";
+import { countryLabel, countryName, eventCountryCode } from "@/lib/francophone";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -370,6 +371,60 @@ function getEventRoute(event: Record<string, unknown>) {
   return slug ? `/evenements/${encodeURIComponent(slug)}` : "/#carte";
 }
 
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  const supabase = createSupabaseServerClient();
+  const event = supabase ? (await fetchEventByIdOrSlug(supabase, id)).event : null;
+
+  if (!event) {
+    return {
+      title: "Événement introuvable",
+      description: "Cette fiche événement n’est pas disponible depuis les données publiques actuelles.",
+      robots: { index: false, follow: true },
+    };
+  }
+
+  const title = value(event, ["title", "name", "event_title", "titre"], "Événement littéraire");
+  const city = value(event, ["city", "ville", "location", "lieu"], "");
+  const region = value(event, ["region", "region_name"], "");
+  const countryCode = eventCountryCode(event);
+  const country = countryName(countryCode);
+  const startDate = value(event, ["start_date", "date", "event_date", "starts_at"], "");
+  const rawDescription = value(event, ["description", "details", "summary", "content"], "");
+  const imageUrl = value(event, ["image_url", "image", "cover_url", "photo_url"], "");
+  const type = value(event, ["type", "category", "source_label"], "Rencontre littéraire");
+
+  const place = [city, region, country].filter(Boolean).join(", ");
+  const dateLabel = formatDate(startDate);
+  const metaTitle = `${title}${city || region ? ` — ${city || region}` : ""}`;
+  const metaDescription = (
+    rawDescription
+      ? rawDescription.replace(/\s+/g, " ").trim()
+      : `${type}${place ? ` à ${place}` : ""}${dateLabel ? ` le ${dateLabel}` : ""}. Lieu, dates et auteurs présents sur Dédicalivres.`
+  ).slice(0, 160);
+
+  const canonical = `/evenements/${encodeURIComponent(value(event, ["id", "event_id", "uuid"], id))}`;
+
+  return {
+    title: metaTitle,
+    description: metaDescription,
+    alternates: { canonical },
+    openGraph: {
+      type: "article",
+      title: metaTitle,
+      description: metaDescription,
+      url: canonical,
+      images: imageUrl ? [{ url: imageUrl }] : undefined,
+    },
+    twitter: {
+      card: imageUrl ? "summary_large_image" : "summary",
+      title: metaTitle,
+      description: metaDescription,
+      images: imageUrl ? [imageUrl] : undefined,
+    },
+  };
+}
+
 export default async function EventPage({ params }: PageProps) {
   const { id } = await params;
   const supabase = createSupabaseServerClient();
@@ -536,7 +591,7 @@ export default async function EventPage({ params }: PageProps) {
                         <span className="event-author-avatar">
                           {author.portraitUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img src={author.portraitUrl} alt="" />
+                            <img src={author.portraitUrl} alt="" loading="lazy" decoding="async" />
                           ) : (
                             getAuthorInitials(author.pseudo)
                           )}

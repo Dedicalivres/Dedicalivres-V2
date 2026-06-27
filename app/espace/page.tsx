@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, Bell, Bookmark, CalendarCheck, Crown, LockKeyhole, ShieldCheck, UserRound } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Espace personnel",
+  description: "Espace utilisateur Dédicalivres en préparation : favoris, alertes et suivi d’événements.",
+  robots: { index: false, follow: true },
+};
 
 const futureBlocks = [
   {
