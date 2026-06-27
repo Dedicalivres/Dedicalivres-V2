@@ -9,21 +9,21 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@supabase/supabase-js": "latest",
-    "@tailwindcss/postcss": "latest",
-    "framer-motion": "latest",
-    "lucide-react": "latest",
-    "next": "latest",
-    "react": "latest",
-    "react-dom": "latest",
-    "tailwindcss": "latest",
-    "three": "^0.184.0"
+    "@supabase/supabase-js": "2.106.2",
+    "@tailwindcss/postcss": "4.3.0",
+    "framer-motion": "12.40.0",
+    "lucide-react": "1.17.0",
+    "next": "16.2.6",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "tailwindcss": "4.3.0",
+    "three": "0.184.0"
   },
   "devDependencies": {
-    "@types/node": "latest",
-    "@types/react": "latest",
-    "@types/react-dom": "latest",
-    "@types/three": "^0.184.1",
-    "typescript": "latest"
+    "@types/node": "25.9.1",
+    "@types/react": "19.2.15",
+    "@types/react-dom": "19.2.3",
+    "@types/three": "0.184.1",
+    "typescript": "6.0.3"
   }
 }

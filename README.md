@@ -9,7 +9,9 @@ La V2 est concue pour vivre en parallele de la V1 publique afin de tester une in
 - Accueil immersif.
 - Recherche d'evenements connectee a Supabase.
 - Agenda visuel.
-- Carte interactive France / region / departement / ville.
+- Agenda francophone partagé : France, Belgique, Luxembourg, Suisse et Monaco.
+- Carte française détaillée par région / département / ville, complétée par un accès direct aux autres pays.
+- Extractions centralisées dans l’admin V1 sécurisé, à partir des mêmes événements Supabase.
 - Galerie auteurs et contributeurs.
 - Contact et livre d'or.
 
