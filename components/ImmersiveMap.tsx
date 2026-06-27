@@ -25,8 +25,7 @@ function openEventPage(event: any) {
 
 import { type CSSProperties, type PointerEvent, useEffect, useMemo, useState } from "react";
 import { Globe2, MapPin } from "lucide-react";
-import { MAP_VIEWBOX, type MapEvent, type MapRegion, type MapDepartment } from "./mapData";
-import { useMapData } from "@/hooks/useMapData";
+import { DEPARTMENTS, MAP_VIEWBOX, REGIONS, type MapEvent } from "./mapData";
 import { supabase } from "@/lib/supabaseClient";
 import {
   FRANCOPHONE_COUNTRIES,
@@ -88,10 +87,11 @@ type TerrainProfile = {
   details: string[];
 };
 
-type RegionCode = string;
-type DepartmentCode = string;
+type RegionCode = (typeof REGIONS)[number]["code"];
+type DepartmentCode = (typeof DEPARTMENTS)[number]["code"];
 
-// regionByCode et departmentByCode sont construits dans le composant via useMemo (voir ImmersiveMap)
+const regionByCode = new Map(REGIONS.map((region) => [region.code, region]));
+const departmentByCode = new Map(DEPARTMENTS.map((department) => [department.code, department]));
 
 const DEFAULT_TERRAIN_PROFILE: TerrainProfile = {
   relief: "Territoire équilibré",
@@ -131,19 +131,20 @@ const REGION_OVERLAY_OFFSETS: Record<string, { x: number; y: number }> = {
   "94": { x: 8.6, y: 3.8 },
 };
 
-// departmentNameToCode est construit dans le composant via useMemo
+const departmentNameToCode = new Map(
+  DEPARTMENTS.map((department) => [
+    department.name.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase(),
+    department.code,
+  ]),
+);
 
-function normalizeDepartmentCode(
-  value: string,
-  departments: MapDepartment[],
-  departmentNameToCode: Map<string, string>,
-): DepartmentCode | "" {
+function normalizeDepartmentCode(value: string): DepartmentCode | "" {
   const raw = String(value || "").trim();
   if (!raw) return "";
   const upper = raw.toUpperCase();
-  if (departments.some((department) => department.code === upper)) return upper as DepartmentCode;
+  if (DEPARTMENTS.some((department) => department.code === upper)) return upper as DepartmentCode;
   if (/^\d$/.test(raw)) return `0${raw}` as DepartmentCode;
-  if (/^\d{2}$/.test(raw) && departments.some((department) => department.code === raw)) return raw as DepartmentCode;
+  if (/^\d{2}$/.test(raw) && DEPARTMENTS.some((department) => department.code === raw)) return raw as DepartmentCode;
   return departmentNameToCode.get(raw.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase()) as DepartmentCode | undefined || "";
 }
 
@@ -238,9 +239,9 @@ function getMarkerVisualScale(level: Level) {
   return 4.15;
 }
 
-function getRegionStats(eventList: MapEvent[], allDepartments: MapDepartment[], regionCode?: string) {
+function getRegionStats(eventList: MapEvent[], regionCode?: string) {
   const events = regionCode ? eventList.filter((event) => event.region === regionCode) : eventList;
-  const departments = regionCode ? allDepartments.filter((department) => department.region === regionCode) : allDepartments;
+  const departments = regionCode ? DEPARTMENTS.filter((department) => department.region === regionCode) : DEPARTMENTS;
   const authors = events.reduce((total, event) => total + event.authors, 0);
   const salons = Math.max(2, Math.round(events.length / 2));
 
@@ -321,7 +322,15 @@ const CITY_FALLBACKS: Record<string, { lat: number; lon: number; department: Dep
   "toulon": { lat: 43.1242, lon: 5.928, department: "83", region: "93" },
 };
 
-// REGION_NAME_TO_CODE est construit dans le composant via useMemo
+const REGION_NAME_TO_CODE = new Map(
+  REGIONS.map((region) => [
+    region.name
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .toLowerCase(),
+    region.code,
+  ]),
+);
 
 function toKey(value: unknown) {
   return String(value || "")
@@ -392,11 +401,11 @@ function isCoordinateInSupportedBounds(lat: number | null, lon: number | null) {
   return lat !== null && lon !== null && lat >= 41 && lat <= 52 && lon >= -6 && lon <= 10.5;
 }
 
-function findDepartmentFromPoint(point: { x: number; y: number }, departments: MapDepartment[]) {
+function findDepartmentFromPoint(point: { x: number; y: number }) {
   // Priorité aux coordonnées : si un événement possède lat/lng, il doit être placé.
   // On déduit ensuite le département par inclusion approximative dans les bounds SVG.
   // Les contours exacts servent à l'affichage ; ce calcul sert seulement au rattachement UX.
-  const candidates = departments
+  const candidates = DEPARTMENTS
     .map((department) => ({ department, bounds: getPathBounds(department.path) }))
     .filter(({ bounds }) =>
       point.x >= bounds.minX - 3 &&
@@ -409,7 +418,7 @@ function findDepartmentFromPoint(point: { x: number; y: number }, departments: M
   if (candidates[0]) return candidates[0].department;
 
   // Fallback : département dont le centre est le plus proche du point.
-  return departments
+  return DEPARTMENTS
     .map((department) => {
       const bounds = getPathBounds(department.path);
       const distance = Math.hypot(bounds.cx - point.x, bounds.cy - point.y);
@@ -418,10 +427,10 @@ function findDepartmentFromPoint(point: { x: number; y: number }, departments: M
     .sort((a, b) => a.distance - b.distance)[0]?.department || null;
 }
 
-function normalizeRegionCode(value: string, regions: MapRegion[], regionNameToCode: Map<string, string>): RegionCode | "" {
+function normalizeRegionCode(value: string): RegionCode | "" {
   const raw = String(value || '').trim();
   if (!raw) return '';
-  if (regions.some((region) => region.code === raw)) return raw as RegionCode;
+  if (REGIONS.some((region) => region.code === raw)) return raw as RegionCode;
 
   const key = toKey(raw)
     .replace(/[’']/g, '')
@@ -445,7 +454,7 @@ function normalizeRegionCode(value: string, regions: MapRegion[], regionNameToCo
     'corse': '94',
   };
 
-  return aliases[key] || regionNameToCode.get(toKey(raw)) as RegionCode | undefined || '';
+  return aliases[key] || REGION_NAME_TO_CODE.get(toKey(raw)) as RegionCode | undefined || '';
 }
 
 function getEventType(row: Record<string, unknown>): MapEvent["type"] {
@@ -645,15 +654,7 @@ function getFlowPath(from: { x: number; y: number }, to: { x: number; y: number 
   return `M ${from.x.toFixed(1)} ${from.y.toFixed(1)} Q ${(midX + direction * curve).toFixed(1)} ${(midY - curve).toFixed(1)} ${to.x.toFixed(1)} ${to.y.toFixed(1)}`;
 }
 
-function normalizeSupabaseEvent(
-  row: Record<string, unknown>,
-  regions: MapRegion[],
-  departments: MapDepartment[],
-  regionByCode: Map<string, MapRegion>,
-  departmentByCode: Map<string, MapDepartment>,
-  departmentNameToCode: Map<string, string>,
-  regionNameToCode: Map<string, string>,
-): MapEvent | null {
+function normalizeSupabaseEvent(row: Record<string, unknown>): MapEvent | null {
   if (!isProbablyVisible(row)) return null;
   if (eventCountryCode(row) !== "FR") return null;
 
@@ -701,12 +702,12 @@ function normalizeSupabaseEvent(
     point = lonLatToMapPoint(lon as number, lat as number);
   }
 
-  let department: string = normalizeDepartmentCode(departmentRaw, departments, departmentNameToCode) || cityFallback?.department || "";
-  let region: string = normalizeRegionCode(regionRaw, regions, regionNameToCode) || cityFallback?.region || "";
+  let department: string = normalizeDepartmentCode(departmentRaw) || cityFallback?.department || "";
+  let region: string = normalizeRegionCode(regionRaw) || cityFallback?.region || "";
 
   // Si les coordonnées existent, on ne rejette pas l'événement. On rattache ensuite au territoire le plus probable.
   if (point) {
-    const inferredDepartment = findDepartmentFromPoint(point, departments);
+    const inferredDepartment = findDepartmentFromPoint(point);
     if (inferredDepartment) {
       department = department || inferredDepartment.code;
       region = region || inferredDepartment.region;
@@ -724,7 +725,7 @@ function normalizeSupabaseEvent(
   if (!point) return null;
 
   if (!department) {
-    const inferredDepartment = findDepartmentFromPoint(point, departments);
+    const inferredDepartment = findDepartmentFromPoint(point);
     department = inferredDepartment?.code || "00";
     region = region || inferredDepartment?.region || "00";
   }
@@ -734,7 +735,7 @@ function normalizeSupabaseEvent(
   }
 
   if (!region) {
-    const inferredDepartment = findDepartmentFromPoint(point, departments);
+    const inferredDepartment = findDepartmentFromPoint(point);
     region = inferredDepartment?.region || "00";
   }
 
@@ -873,26 +874,6 @@ function clearMapReturnParams() {
 }
 
 export function ImmersiveMap() {
-  // ── Chargement à la demande des données SVG France (370 Ko) ──────────────
-  const { regions: REGIONS, departments: DEPARTMENTS, loading: mapDataLoading } = useMapData();
-
-  const regionByCode = useMemo(
-    () => new Map(REGIONS.map((r) => [r.code, r])),
-    [REGIONS],
-  );
-  const departmentByCode = useMemo(
-    () => new Map(DEPARTMENTS.map((d) => [d.code, d])),
-    [DEPARTMENTS],
-  );
-  const departmentNameToCode = useMemo(
-    () => new Map(DEPARTMENTS.map((d) => [d.name.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase(), d.code])),
-    [DEPARTMENTS],
-  );
-  const REGION_NAME_TO_CODE = useMemo(
-    () => new Map(REGIONS.map((r) => [r.name.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase(), r.code])),
-    [REGIONS],
-  );
-  // ─────────────────────────────────────────────────────────────────────────
   const [selectedCountry, setSelectedCountry] = useState<FrancophoneCountryCode>("FR");
   const [level, setLevel] = useState<Level>("france");
   const [selectedRegion, setSelectedRegion] = useState<RegionCode | null>(null);
@@ -916,15 +897,6 @@ export function ImmersiveMap() {
 
     return () => media.removeEventListener("change", syncCompactMode);
   }, []);
-
-  // Afficher un état de chargement pendant le fetch des données SVG
-  if (mapDataLoading && REGIONS.length === 0) {
-    return (
-      <div className="immersive-map-loading">
-        <span>Chargement de la carte…</span>
-      </div>
-    );
-  }
 
   useEffect(() => {
     const desired = readMapReturnParams();
@@ -950,8 +922,8 @@ export function ImmersiveMap() {
       }
 
       setSelectedCountry("FR");
-      const desiredRegion = normalizeRegionCode(desired.region, REGIONS, REGION_NAME_TO_CODE);
-      const desiredDepartment = normalizeDepartmentCode(desired.department, DEPARTMENTS, departmentNameToCode);
+      const desiredRegion = normalizeRegionCode(desired.region);
+      const desiredDepartment = normalizeDepartmentCode(desired.department);
 
       if (desiredRegion) {
         setLevel("region");
@@ -1048,7 +1020,7 @@ export function ImmersiveMap() {
 
       const rows = (data || []) as Record<string, unknown>[];
       const normalized = rows
-        .map((row) => normalizeSupabaseEvent(row, REGIONS, DEPARTMENTS, regionByCode, departmentByCode, departmentNameToCode, REGION_NAME_TO_CODE))
+        .map((row) => normalizeSupabaseEvent(row))
         .filter(Boolean) as MapEvent[];
       const normalizedFrancophone = rows
         .map((row) => normalizeFrancophoneEvent(row))
@@ -1360,7 +1332,7 @@ export function ImmersiveMap() {
 
 
   const panelTitle = selectedEvent?.title || selectedCity || activeDepartment?.name || activeRegion?.name || "Carte détaillée";
-  const regionStats = getRegionStats(mapEvents, DEPARTMENTS, activeRegionCode || undefined);
+  const regionStats = getRegionStats(mapEvents, activeRegionCode || undefined);
   const departmentStats = getDepartmentStats(mapEvents, activeDepartmentCode || undefined);
   const cityStats = getCityStats(mapEvents, selectedCity || undefined);
   const panelStats = selectedEvent ? { events: 1, authors: selectedEvent.authors || 1, salons: selectedEvent.type === "salon" ? 1 : 0, departments: 1 } : selectedCity ? cityStats : activeDepartment ? departmentStats : regionStats;

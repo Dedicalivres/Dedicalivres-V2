@@ -4,7 +4,19 @@ import { useEffect, useState } from "react";
 import { ArrowRight, AtSign, CalendarDays, Filter, Globe2, Mail, MapPin, MessageSquare, Search, Send } from "lucide-react";
 import { AgendaCalendar } from "@/components/AgendaCalendar";
 import { AuthorsFloatingGallery } from "@/components/AuthorsFloatingGallery";
-import { ImmersiveMap } from "@/components/ImmersiveMap";
+import dynamic from "next/dynamic";
+
+const ImmersiveMap = dynamic(
+  () => import("@/components/ImmersiveMap").then((mod) => ({ default: mod.ImmersiveMap })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="immersive-map-loading">
+        <span>Chargement de la carte…</span>
+      </div>
+    ),
+  }
+);
 import { LivingBook } from "@/components/LivingBook";
 import { supabase } from "@/lib/supabaseClient";
 import { FRANCOPHONE_COUNTRIES } from "@/lib/francophone";
