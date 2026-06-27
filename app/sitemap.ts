@@ -1,10 +1,23 @@
 import type { MetadataRoute } from "next";
 import { createClient } from "@supabase/supabase-js";
+import {
+  FRANCOPHONE_COUNTRIES,
+  countryTerritories,
+} from "@/lib/francophone";
 
 const BASE_URL = "https://v2.dedicalivres.fr";
 
 // Régénère le sitemap au plus une fois par heure.
 export const revalidate = 3600;
+
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes: MetadataRoute.Sitemap = [
@@ -14,13 +27,32 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${BASE_URL}/soumettre`, lastModified: new Date(), changeFrequency: "monthly", priority: 0.4 },
   ];
 
+  // Routes pays — une par pays francophone.
+  const countryRoutes: MetadataRoute.Sitemap = FRANCOPHONE_COUNTRIES.map((country) => ({
+    url: `${BASE_URL}/pays/${country.code.toLowerCase()}`,
+    lastModified: new Date(),
+    changeFrequency: "daily" as const,
+    priority: 0.85,
+  }));
+
+  // Routes territoire — une par subdivision de chaque pays.
+  const territoryRoutes: MetadataRoute.Sitemap = FRANCOPHONE_COUNTRIES.flatMap((country) =>
+    countryTerritories(country.code).map((territory) => ({
+      url: `${BASE_URL}/pays/${country.code.toLowerCase()}/${slugify(territory.name)}`,
+      lastModified: new Date(),
+      changeFrequency: "weekly" as const,
+      priority: 0.75,
+    }))
+  );
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!supabaseUrl || !supabaseAnonKey) return staticRoutes;
+  if (!supabaseUrl || !supabaseAnonKey) {
+    return [...staticRoutes, ...countryRoutes, ...territoryRoutes];
+  }
 
   try {
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
-    // select("*") pour ne dépendre d'aucune colonne précise (schéma tolérant).
     const { data, error } = await supabase
       .from("events")
       .select("*")
@@ -28,7 +60,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .eq("rejected", false)
       .limit(5000);
 
-    if (error || !data) return staticRoutes;
+    if (error || !data) {
+      return [...staticRoutes, ...countryRoutes, ...territoryRoutes];
+    }
 
     const pick = (row: Record<string, unknown>, keys: string[]) => {
       for (const key of keys) {
@@ -53,8 +87,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       })
       .filter((entry): entry is NonNullable<typeof entry> => entry !== null);
 
-    return [...staticRoutes, ...eventRoutes];
+    return [...staticRoutes, ...countryRoutes, ...territoryRoutes, ...eventRoutes];
   } catch {
-    return staticRoutes;
+    return [...staticRoutes, ...countryRoutes, ...territoryRoutes];
   }
 }
