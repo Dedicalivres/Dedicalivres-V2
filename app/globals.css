@@ -17559,13 +17559,16 @@ body:has(.tab-dashboard) .home-shell .nav-item span {
 /* =====================================================================
    CORRECTIF AFFICHAGE CALENDRIER AGENDA (2026-06-27)
    Problème : l'onglet agenda était verrouillé à la hauteur de l'écran
-   (height: 100vh + overflow: hidden). Sur les écrans courts, les rangées
-   du mois (hauteur mini 66px) débordaient de leurs cases, se chevauchaient
-   et étaient coupées en bas.
+   (height: 100vh/100% + overflow: hidden). Quand le contenu ne tenait pas,
+   les rangées du mois débordaient de leurs cases, se chevauchaient et
+   étaient coupées en bas — aussi bien sur desktop que sur mobile.
    Correctif : on libère la hauteur de l'onglet agenda (il peut grandir et
-   la page défile), et on garantit une hauteur de rangée pour empêcher tout
-   chevauchement. Les autres onglets ne sont pas touchés.
+   la page défile) et on aligne la hauteur de rangée sur la hauteur réelle
+   des cases, pour empêcher tout chevauchement. Les autres onglets ne sont
+   pas touchés. Réglages distincts desktop / mobile.
    ===================================================================== */
+
+/* --- Desktop (cases hautes : 66px) --- */
 @media (min-width: 761px) {
   .app-tab-panel.agenda-tab {
     height: auto;
@@ -17583,5 +17586,37 @@ body:has(.tab-dashboard) .home-shell .nav-item span {
 
   .agenda-month-grid {
     grid-auto-rows: minmax(66px, auto);
+  }
+}
+
+/* --- Mobile / tablette étroite (cases compactes : clamp 38–49px) --- */
+@media (max-width: 760px) {
+  .app-tab-panel.agenda-tab {
+    height: auto !important;
+    min-height: calc(100dvh - 16px) !important;
+    overflow: visible !important;
+    padding-bottom: 92px !important; /* dégage la barre de navigation fixe */
+  }
+
+  .agenda-tab {
+    overflow: visible !important;
+  }
+
+  .agenda-calendar {
+    height: auto !important;
+  }
+
+  .agenda-calendar-layout,
+  .agenda-grid-panel {
+    overflow: visible !important;
+  }
+
+  /* la coquille de jour suit la hauteur réelle de la case (sinon 66px force le chevauchement) */
+  .agenda-day-shell {
+    min-height: clamp(38px, 6.4dvh, 49px) !important;
+  }
+
+  .agenda-month-grid {
+    grid-auto-rows: minmax(clamp(38px, 6.4dvh, 49px), auto) !important;
   }
 }
