@@ -688,6 +688,8 @@ h1 {
 }
 
 .living-stage { position: relative; z-index: 2; min-height: 590px; display: grid; place-items: center; perspective: 1100px; }
+.grimoire-stage { position: relative; z-index: 2; min-height: 590px; display: grid; place-items: center; }
+.grimoire-vivant-root { width: 100%; height: 100%; min-height: 520px; }
 .book-aura {
   position: absolute;
   width: 620px;
@@ -841,7 +843,8 @@ h2 { margin: 0; font-size: clamp(40px, 4.6vw, 76px); line-height: .92; letter-sp
   .lead { margin-left:auto; margin-right:auto; }
   .cta-row { justify-content:center; }
   .search-pill { margin-left:auto; margin-right:auto; }
-  .living-stage { min-height: 390px; order:-1; }
+  .living-stage ,
+  .grimoire-stage { min-height: 390px; order:-1; }
   .living-book { width: 94vw; height: 300px; transform: scale(.82); }
   .book-aura { width: 380px; height:380px; }
   .page-left, .page-right { width: 178px; height: 205px; bottom: 76px; }
@@ -7885,7 +7888,8 @@ body:has(.home-shell) {
   color: rgba(245,242,234,.76);
 }
 
-.tab-dashboard .living-stage {
+.tab-dashboard .living-stage ,
+.tab-dashboard .grimoire-stage {
   min-height: 560px;
   transform: translateX(14px) scale(1.02);
 }
@@ -8195,7 +8199,8 @@ body:has(.home-shell) {
   background: rgba(1,12,9,.44);
 }
 
-.home-dashboard .living-stage {
+.home-dashboard .living-stage ,
+.home-dashboard .grimoire-stage {
   min-height: 520px;
   margin-left: -36px;
   transform: translateX(20px) scale(1.1);
@@ -8967,7 +8972,8 @@ body:has(.home-shell) {
     font-size: clamp(44px, 4.5vw, 58px);
   }
 
-  .home-dashboard .living-stage {
+  .home-dashboard .living-stage ,
+  .home-dashboard .grimoire-stage {
     min-height: 450px;
     margin-left: -156px;
     transform: translateX(0) scale(.86);
@@ -9049,7 +9055,8 @@ body:has(.home-shell) {
   .home-dashboard .hero { display: block; min-height: auto; padding: 74px 20px 28px; text-align: left; }
   .hero-top-actions { left: 16px; right: 16px; justify-content: space-between; }
   .home-dashboard h1 { font-size: 46px; }
-  .home-dashboard .living-stage { min-height: 360px; margin: 0; transform: scale(.82); }
+  .home-dashboard .living-stage ,
+  .home-dashboard .grimoire-stage { min-height: 360px; margin: 0; transform: scale(.82); }
   .home-dashboard .living-book-3d-stage { min-height: 380px; margin: 0; }
   .home-dashboard .book-3d-canvas { width: 100%; height: 380px; }
   .home-dashboard .vitrine-rail,
@@ -9238,7 +9245,8 @@ body:has(.tab-dashboard) .nav-footer-actions {
   max-width: 390px;
 }
 
-.tab-dashboard .living-stage {
+.tab-dashboard .living-stage ,
+.tab-dashboard .grimoire-stage {
   min-height: 620px;
   transform: translateX(0) scale(1.05);
 }
@@ -9463,6 +9471,7 @@ body:has(.tab-dashboard) .home-shell .nav-item span {
   }
 
   .tab-dashboard .is-hero-tab .living-stage,
+  .tab-dashboard .is-hero-tab .grimoire-stage,
   .tab-dashboard .is-hero-tab .living-book-3d-stage {
     position: absolute !important;
     z-index: 2 !important;
@@ -9967,6 +9976,7 @@ body:has(.tab-dashboard) .home-shell .nav-item span {
   }
 
   .tab-dashboard .is-hero-tab .living-stage,
+  .tab-dashboard .is-hero-tab .grimoire-stage,
   .tab-dashboard .is-hero-tab .living-book-3d-stage {
     position: absolute !important;
     z-index: 2 !important;
@@ -10696,6 +10706,7 @@ body:has(.tab-dashboard) .home-shell .nav-item span {
   }
 
   .tab-dashboard .is-hero-tab .living-stage,
+  .tab-dashboard .is-hero-tab .grimoire-stage,
   .tab-dashboard .is-hero-tab .living-book-3d-stage {
     grid-column: 1;
     grid-row: 1 / -1;
@@ -11735,6 +11746,7 @@ body:has(.tab-dashboard) .home-shell .nav-item span {
   }
 
   .tab-dashboard .is-hero-tab .living-stage,
+  .tab-dashboard .is-hero-tab .grimoire-stage,
   .tab-dashboard .is-hero-tab .living-book-3d-stage {
     inset: auto -120px 18px auto !important;
     width: min(76vw, 310px) !important;
@@ -12530,6 +12542,7 @@ body:has(.tab-dashboard) .home-shell .nav-item span {
   }
 
   .tab-dashboard .is-hero-tab .living-stage,
+  .tab-dashboard .is-hero-tab .grimoire-stage,
   .tab-dashboard .is-hero-tab .living-book-3d-stage {
     position: absolute;
     inset: auto -92px 22px auto;
@@ -13144,6 +13157,7 @@ body:has(.tab-dashboard) .home-shell .nav-item span {
 }
 
 .tab-dashboard .living-stage,
+.tab-dashboard .grimoire-stage,
 .tab-dashboard .living-book-3d-stage {
   min-height: calc(100vh - 96px);
   height: calc(100vh - 96px);
@@ -13666,7 +13680,8 @@ body:has(.tab-dashboard) .home-shell .nav-item span {
 }
 
 .tab-dashboard .is-hero-tab .living-book-3d-stage,
-.tab-dashboard .is-hero-tab .living-stage {
+.tab-dashboard .is-hero-tab .living-stage ,
+.tab-dashboard .is-hero-tab .grimoire-stage {
   grid-column: 2;
   grid-row: 1;
   align-self: center;
@@ -13688,7 +13703,8 @@ body:has(.tab-dashboard) .home-shell .nav-item span {
   }
 
   .tab-dashboard .is-hero-tab .living-book-3d-stage,
-  .tab-dashboard .is-hero-tab .living-stage {
+  .tab-dashboard .is-hero-tab .living-stage ,
+  .tab-dashboard .is-hero-tab .grimoire-stage {
     min-height: calc(100vh - 108px);
     height: calc(100vh - 108px);
   }
@@ -14627,7 +14643,8 @@ body:has(.tab-dashboard) .home-shell .nav-item span {
   font-size: 15px;
 }
 
-.tab-dashboard .living-stage {
+.tab-dashboard .living-stage ,
+.tab-dashboard .grimoire-stage {
   min-height: 650px;
   transform: translateX(0) scale(1.08);
 }
@@ -14724,7 +14741,8 @@ body:has(.tab-dashboard) .home-shell .nav-item span {
     grid-template-columns: 1fr;
   }
 
-  .tab-dashboard .living-stage {
+  .tab-dashboard .living-stage ,
+  .tab-dashboard .grimoire-stage {
     min-height: 430px;
     transform: none;
   }
@@ -14965,7 +14983,8 @@ body:has(.tab-dashboard) .home-shell .nav-item span {
   max-width: 380px;
 }
 
-.tab-dashboard .living-stage {
+.tab-dashboard .living-stage ,
+.tab-dashboard .grimoire-stage {
   min-height: 640px;
   transform: translateX(0) scale(1.05);
 }
@@ -15777,6 +15796,7 @@ body:has(.tab-dashboard) .home-shell .nav-item span {
   }
 
   .tab-dashboard .is-hero-tab .living-stage,
+  .tab-dashboard .is-hero-tab .grimoire-stage,
   .tab-dashboard .is-hero-tab .living-book-3d-stage {
     position: absolute !important;
     inset: 74px -32px auto auto !important;
@@ -16581,6 +16601,7 @@ body:has(.tab-dashboard) .home-shell .nav-item span {
   }
 
   .tab-dashboard .is-hero-tab .living-stage,
+  .tab-dashboard .is-hero-tab .grimoire-stage,
   .tab-dashboard .is-hero-tab .living-book-3d-stage {
     position: relative !important;
     inset: auto !important;
@@ -17619,32 +17640,4 @@ body:has(.tab-dashboard) .home-shell .nav-item span {
   .agenda-month-grid {
     grid-auto-rows: minmax(clamp(38px, 6.4dvh, 49px), auto) !important;
   }
-}
-
-/* ── GrimoireVivant — wrapper ───────────────────────────────────────────── */
-.grimoire-stage {
-  min-height: 590px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  z-index: 2;
-}
-.grimoire-vivant-root {
-  width: 100%;
-  height: 100%;
-  min-height: 520px;
-}
-
-@media (max-width: 1024px) {
-  .grimoire-stage { min-height: 440px; }
-  .grimoire-vivant-root { min-height: 400px; }
-}
-
-@media (max-width: 760px) {
-  .grimoire-stage {
-    min-height: 380px;
-    order: -1;
-  }
-  .grimoire-vivant-root { min-height: 360px; }
 }
