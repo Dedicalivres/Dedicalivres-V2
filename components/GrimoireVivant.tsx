@@ -136,7 +136,8 @@ export function GrimoireVivant({ fallback: _fallback }: GrimoireVivantProps) {
     const st = stateRef.current; if (st.writeStarted) return; st.writeStarted = true;
     const fw = featherRef.current; const svg = writingSvgRef.current;
     const root = rootRef.current; if (!fw || !svg || !root) return;
-    fw.style.opacity = "1";
+    const fwNN = fw;
+    fwNN.style.opacity = "1";
     const seq = [
       { rect: "gv-cr-b", x0: 5, x1: 255, ySvg: 138, dur: 1560, delay: 0, fullW: 260 },
       { rect: "gv-cr-d", x0: 5, x1: 255, ySvg: 182, dur: 1920, delay: 1700, fullW: 260 },
@@ -155,8 +156,8 @@ export function GrimoireVivant({ fallback: _fallback }: GrimoireVivantProps) {
             elNN.setAttribute("width", String(s.fullW * ease));
             const cx = (s.x0 + (s.x1 - s.x0) * ease) * scX + (pr.left - sr.left);
             const cy = s.ySvg * scY + (pr.top - sr.top);
-            fw.style.left = `${cx}px`; fw.style.top = `${cy}px`;
-            fw.style.transform = `translate(-50%,-100%) rotate(${-38 + Math.sin(now * 0.021) * 2.8}deg)`;
+            fwNN.style.left = `${cx}px`; fwNN.style.top = `${cy}px`;
+            fwNN.style.transform = `translate(-50%,-100%) rotate(${-38 + Math.sin(now * 0.021) * 2.8}deg)`;
             if (now - lastL > 140) { spawnLetter(cx, cy); spawnSpark(cx, cy); lastL = now; }
             if (p < 1) requestAnimationFrame(step); else resolve();
           }
@@ -165,7 +166,7 @@ export function GrimoireVivant({ fallback: _fallback }: GrimoireVivantProps) {
       });
     }
     await new Promise(r => setTimeout(r, 700));
-    fw.style.opacity = "0";
+    fwNN.style.opacity = "0";
   }, [spawnLetter, spawnSpark]);
 
   const toggleBook = useCallback((cx: number, cy: number) => {
@@ -231,38 +232,39 @@ export function GrimoireVivant({ fallback: _fallback }: GrimoireVivantProps) {
     const st = stateRef.current;
 
     function drawCover(t: number) {
-      if (!c2) return; const w = 260; const h = 340; c2.clearRect(0, 0, w, h);
-      veinsRef.current.forEach(v => { const a = 0.15 + Math.sin(t * 0.5 + v.ph) * 0.13; c2!.beginPath(); c2!.moveTo(v.x, v.y); c2!.bezierCurveTo(v.cp1x, v.cp1y, v.cp2x, v.cp2y, v.ex, v.ey); c2!.strokeStyle = v.c + a + ")"; c2!.lineWidth = v.w; c2!.stroke(); });
-      c2.save(); c2.globalAlpha = 0.07 + Math.sin(t * 0.3) * 0.025;
-      for (let gx = 14; gx < w; gx += 28) for (let gy = 12; gy < h; gy += 24) { c2.beginPath(); for (let k = 0; k < 6; k++) { const a2 = k * Math.PI / 3; k === 0 ? c2.moveTo(gx + Math.cos(a2) * 7, gy + Math.sin(a2) * 7) : c2.lineTo(gx + Math.cos(a2) * 7, gy + Math.sin(a2) * 7); } c2.closePath(); c2.strokeStyle = "rgba(110,240,155,.9)"; c2.lineWidth = 0.35; c2.stroke(); }
-      c2.restore();
-      nodesRef.current.forEach(n => { const a = 0.35 + Math.sin(t * n.sp + n.ph) * 0.5; const g = c2!.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r * 4); g.addColorStop(0, n.c + a + ")"); g.addColorStop(1, n.c + "0)"); c2!.beginPath(); c2!.arc(n.x, n.y, n.r * 4, 0, Math.PI * 2); c2!.fillStyle = g; c2!.fill(); c2!.beginPath(); c2!.arc(n.x, n.y, n.r, 0, Math.PI * 2); c2!.fillStyle = n.c + Math.min(1, a + 0.15) + ")"; c2!.fill(); });
+      if (!c2) return; const c2NN = c2; const w = 260; const h = 340; c2NN.clearRect(0, 0, w, h);
+      veinsRef.current.forEach(v => { const a = 0.15 + Math.sin(t * 0.5 + v.ph) * 0.13; c2NN.beginPath(); c2NN.moveTo(v.x, v.y); c2NN.bezierCurveTo(v.cp1x, v.cp1y, v.cp2x, v.cp2y, v.ex, v.ey); c2NN.strokeStyle = v.c + a + ")"; c2NN.lineWidth = v.w; c2NN.stroke(); });
+      c2NN.save(); c2NN.globalAlpha = 0.07 + Math.sin(t * 0.3) * 0.025;
+      for (let gx = 14; gx < w; gx += 28) for (let gy = 12; gy < h; gy += 24) { c2NN.beginPath(); for (let k = 0; k < 6; k++) { const a2 = k * Math.PI / 3; k === 0 ? c2NN.moveTo(gx + Math.cos(a2) * 7, gy + Math.sin(a2) * 7) : c2NN.lineTo(gx + Math.cos(a2) * 7, gy + Math.sin(a2) * 7); } c2NN.closePath(); c2NN.strokeStyle = "rgba(110,240,155,.9)"; c2NN.lineWidth = 0.35; c2NN.stroke(); }
+      c2NN.restore();
+      nodesRef.current.forEach(n => { const a = 0.35 + Math.sin(t * n.sp + n.ph) * 0.5; const g = c2NN.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.r * 4); g.addColorStop(0, n.c + a + ")"); g.addColorStop(1, n.c + "0)"); c2NN.beginPath(); c2NN.arc(n.x, n.y, n.r * 4, 0, Math.PI * 2); c2NN.fillStyle = g; c2NN.fill(); c2NN.beginPath(); c2NN.arc(n.x, n.y, n.r, 0, Math.PI * 2); c2NN.fillStyle = n.c + Math.min(1, a + 0.15) + ")"; c2NN.fill(); });
       const lx = (st.tx * 0.5 + 0.5) * w; const ly = (st.ty * 0.5 + 0.5) * h;
-      const lg = c2.createRadialGradient(lx, ly, 0, lx, ly, w * 0.55); lg.addColorStop(0, "rgba(65,210,110,.28)"); lg.addColorStop(1, "transparent");
-      c2.fillStyle = lg; c2.fillRect(0, 0, w, h);
+      const lg = c2NN.createRadialGradient(lx, ly, 0, lx, ly, w * 0.55); lg.addColorStop(0, "rgba(65,210,110,.28)"); lg.addColorStop(1, "transparent");
+      c2NN.fillStyle = lg; c2NN.fillRect(0, 0, w, h);
     }
 
     function drawFlash(now: number) {
       if (!fc || !flashCvs || !st.flashActive) return;
+      const fcNN = fc; const fcvsNN = flashCvs;
       const el = now - st.flashStart;
-      if (el > FLASH_DUR) { st.flashActive = false; fc.clearRect(0, 0, flashCvs.width, flashCvs.height); return; }
-      const p = el / FLASH_DUR; const w = flashCvs.width; const h = flashCvs.height;
-      fc.clearRect(0, 0, w, h);
+      if (el > FLASH_DUR) { st.flashActive = false; fcNN.clearRect(0, 0, fcvsNN.width, fcvsNN.height); return; }
+      const p = el / FLASH_DUR; const w = fcvsNN.width; const h = fcvsNN.height;
+      fcNN.clearRect(0, 0, w, h);
       let env = p < 0.18 ? p / 0.18 : p < 0.55 ? 1 : 1 - (p - 0.55) / 0.45;
       env = Math.max(0, Math.min(1, env));
       const cx = st.flashCx; const cy = st.flashCy; const diag = Math.sqrt(w * w + h * h); const ep = Math.pow(p, 0.55); const t2 = el / 1000 * 0.8;
       FLASH_LAYERS.forEach((l, i) => {
         const nx = noise(i * 1.3, 0, t2) * 28 * (1 - p * 0.6); const ny = noise(0, i * 1.1, t2 + 1.5) * 22 * (1 - p * 0.6);
         const r = diag * l.r * ep;
-        const g = fc!.createRadialGradient(cx + nx, cy + ny, 0, cx + nx, cy + ny, r);
+        const g = fcNN.createRadialGradient(cx + nx, cy + ny, 0, cx + nx, cy + ny, r);
         const op = l.op * env * (1 - p * 0.15);
         g.addColorStop(0, `rgba(${l.c},${Math.min(0.95, op)})`); g.addColorStop(0.35, `rgba(${l.c},${op * 0.6})`); g.addColorStop(0.7, `rgba(${l.c},${op * 0.18})`); g.addColorStop(1, `rgba(${l.c},0)`);
-        fc!.globalCompositeOperation = "lighter"; fc!.fillStyle = g; fc!.beginPath(); fc!.arc(cx + nx, cy + ny, r, 0, Math.PI * 2); fc!.fill();
+        fcNN.globalCompositeOperation = "lighter"; fcNN.fillStyle = g; fcNN.beginPath(); fcNN.arc(cx + nx, cy + ny, r, 0, Math.PI * 2); fcNN.fill();
       });
-      const hg = fc.createRadialGradient(cx, cy, 0, cx, cy, diag * 0.18 * ep); const hop = 0.7 * env * (1 - p * 0.3);
+      const hg = fcNN.createRadialGradient(cx, cy, 0, cx, cy, diag * 0.18 * ep); const hop = 0.7 * env * (1 - p * 0.3);
       hg.addColorStop(0, `rgba(255,230,120,${Math.min(0.9, hop)})`); hg.addColorStop(0.5, `rgba(240,200,60,${hop * 0.4})`); hg.addColorStop(1, "rgba(200,150,10,0)");
-      fc.fillStyle = hg; fc.beginPath(); fc.arc(cx, cy, diag * 0.18 * ep, 0, Math.PI * 2); fc.fill();
-      fc.globalCompositeOperation = "source-over";
+      fcNN.fillStyle = hg; fcNN.beginPath(); fcNN.arc(cx, cy, diag * 0.18 * ep, 0, Math.PI * 2); fcNN.fill();
+      fcNN.globalCompositeOperation = "source-over";
     }
 
     function animMedal(t: number) {
