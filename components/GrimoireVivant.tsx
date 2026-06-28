@@ -145,13 +145,14 @@ export function GrimoireVivant({ fallback: _fallback }: GrimoireVivantProps) {
       await new Promise<void>(resolve => {
         setTimeout(() => {
           const el = document.getElementById(s.rect) as SVGRectElement | null; if (!el) { resolve(); return; }
+          const elNN = el;
           const pr = svg.getBoundingClientRect(); const sr = root.getBoundingClientRect();
           const scX = pr.width / 260; const scY = pr.height / 340;
           const start = performance.now(); let lastL = 0;
           function step(now: number) {
             const p = Math.min(1, (now - start) / s.dur);
             const ease = 1 - Math.pow(1 - p, 3);
-            el.setAttribute("width", String(s.fullW * ease));
+            elNN.setAttribute("width", String(s.fullW * ease));
             const cx = (s.x0 + (s.x1 - s.x0) * ease) * scX + (pr.left - sr.left);
             const cy = s.ySvg * scY + (pr.top - sr.top);
             fw.style.left = `${cx}px`; fw.style.top = `${cy}px`;
