@@ -29,14 +29,14 @@ export const metadata: Metadata = {
     locale: "fr_FR",
     title: "Dédicalivres — Agenda littéraire francophone",
     description:
-      "Salons du livre, festivals, dédicaces et rencontres littéraires dans tout l’espace francophone.",
+      "Salons du livre, festivals, dédicaces et rencontres littéraires dans tout l'espace francophone.",
     url: "https://v2.dedicalivres.fr",
   },
   twitter: {
     card: "summary_large_image",
     title: "Dédicalivres — Agenda littéraire francophone",
     description:
-      "Salons du livre, festivals, dédicaces et rencontres littéraires dans tout l’espace francophone.",
+      "Salons du livre, festivals, dédicaces et rencontres littéraires dans tout l'espace francophone.",
   },
   robots: { index: true, follow: true },
 };
@@ -44,6 +44,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr">
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body><MainNavigation />{children}</body>
     </html>
   );
